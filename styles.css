@@ -246,6 +246,19 @@ button:focus-visible {
   gap: 10px;
 }
 
+.import-error {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.import-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
 .button-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -478,7 +491,16 @@ details[open] > .instructions-head .chevron {
   transform: rotate(90deg);
 }
 
+/* Los navegadores modernos envuelven el contenido de <details> en ::details-content;
+   sin esto la lista no hereda el límite de altura y el scroll no aparece. */
+.instructions-panel::details-content {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+}
+
 .instructions-list {
+  min-height: 0;
   overflow-y: auto;
   padding: 10px;
 }

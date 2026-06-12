@@ -1,12 +1,6 @@
 import { GridCanvas, MAX_ZOOM, MIN_ZOOM } from "./gridCanvas.js";
 import { exportMatrixAsPng } from "./exporter.js";
-import {
-  createImportPreview,
-  loadImageFromFile,
-  movePreviewToCell,
-  stampPreview,
-  suggestImportSize,
-} from "./imageImporter.js";
+import { createImportPreview, loadImageFromFile, stampPreview } from "./imageImporter.js";
 import {
   clamp,
   clearRegion,
@@ -24,6 +18,8 @@ const elements = {
   rowsInput: document.querySelector("#rowsInput"),
   colsInput: document.querySelector("#colsInput"),
   tallCellsInput: document.querySelector("#tallCellsInput"),
+  widePixelsRow: document.querySelector("#widePixelsRow"),
+  widePixelsInput: document.querySelector("#widePixelsInput"),
   toolButtons: Array.from(document.querySelectorAll("[data-tool]")),
   clearBtn: document.querySelector("#clearBtn"),
   undoBtn: document.querySelector("#undoBtn"),
@@ -38,11 +34,8 @@ const elements = {
   panBtn: document.querySelector("#panBtn"),
   imageInput: document.querySelector("#imageInput"),
   importControls: document.querySelector("#importControls"),
-  importWidthInput: document.querySelector("#importWidthInput"),
-  importHeightInput: document.querySelector("#importHeightInput"),
+  importError: document.querySelector("#importError"),
   invertImageInput: document.querySelector("#invertImageInput"),
-  stampImportBtn: document.querySelector("#stampImportBtn"),
-  cancelImportBtn: document.querySelector("#cancelImportBtn"),
   exportBtn: document.querySelector("#exportBtn"),
   designModeBtn: document.querySelector("#designModeBtn"),
   weaveModeBtn: document.querySelector("#weaveModeBtn"),
@@ -61,6 +54,7 @@ const elements = {
 };
 
 let importedImage = null;
+let preImportSnapshot = null;
 let dragAction = null;
 let panActive = false;
 
@@ -74,6 +68,50 @@ function updateFocusSpacing() {
   }
 }
 
+// --- Vista con píxel cuadrado (duplica columnas, solo presentación) ---
+
+function isWideView() {
+  return state.tallCells && state.widePixels;
+}
+
+function viewCols() {
+  return state.cols * (isWideView() ? 2 : 1);
+}
+
+function doubleColumns(matrix) {
+  return matrix.map((row) => row.flatMap((value) => [value, value]));
+}
+
+function widenLayer(layer) {
+  if (!layer) return layer;
+  return { ...layer, x: layer.x * 2, width: layer.width * 2, cells: doubleColumns(layer.cells) };
+}
+
+// Estado que ven los lienzos: el diseño original nunca se modifica.
+function viewState() {
+  if (!isWideView()) return state;
+  return {
+    ...state,
+    cols: viewCols(),
+    matrix: doubleColumns(state.matrix),
+    selection: state.selection && {
+      ...state.selection,
+      x: state.selection.x * 2,
+      width: state.selection.width * 2,
+    },
+    floating: widenLayer(state.floating),
+    importPreview: widenLayer(state.importPreview),
+  };
+}
+
+function toModelCell(cell) {
+  return isWideView() ? { row: cell.row, col: Math.floor(cell.col / 2) } : cell;
+}
+
+function displayMatrix() {
+  return isWideView() ? doubleColumns(state.matrix) : state.matrix;
+}
+
 // --- Historial ---
 
 const HISTORY_LIMIT = 80;
@@ -84,10 +122,14 @@ function snapshot() {
   return { matrix: cloneMatrix(state.matrix), rows: state.rows, cols: state.cols };
 }
 
-function pushHistory() {
-  undoStack.push(snapshot());
+function pushSnapshot(snap) {
+  undoStack.push(snap);
   if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
   redoStack.length = 0;
+}
+
+function pushHistory() {
+  pushSnapshot(snapshot());
 }
 
 function applySnapshot(snap) {
@@ -96,14 +138,16 @@ function applySnapshot(snap) {
   state.cols = snap.cols;
   elements.rowsInput.value = snap.rows;
   elements.colsInput.value = snap.cols;
-  elements.importWidthInput.max = snap.cols;
-  elements.importHeightInput.max = snap.rows;
   state.selection = null;
   state.activeColumn = Math.min(state.activeColumn, snap.cols - 1);
   redraw();
 }
 
 function undo() {
+  if (state.importPreview) {
+    cancelImport();
+    return;
+  }
   if (state.floating) {
     cancelFloating();
     return;
@@ -205,10 +249,17 @@ function pasteClipboard() {
 // --- Gestos sobre el lienzo ---
 
 function handleCellDown(cell) {
+  cell = toModelCell(cell);
   if (state.importPreview) {
-    state.importPreview = movePreviewToCell(state.importPreview, cell, state.rows, state.cols);
-    dragAction = { type: "import" };
-    redraw();
+    if (cellInRect(cell, state.importPreview)) {
+      dragAction = {
+        type: "import",
+        dx: cell.col - state.importPreview.x,
+        dy: cell.row - state.importPreview.y,
+      };
+    } else {
+      stampImport();
+    }
     return;
   }
   if (state.floating) {
@@ -256,15 +307,16 @@ function handleCellDown(cell) {
   }
 }
 
-function moveFloating(cell) {
-  state.floating.x = clamp(cell.col - dragAction.dx, 0, state.cols - state.floating.width);
-  state.floating.y = clamp(cell.row - dragAction.dy, 0, state.rows - state.floating.height);
+function moveLayer(layer, cell) {
+  layer.x = clamp(cell.col - dragAction.dx, 0, state.cols - layer.width);
+  layer.y = clamp(cell.row - dragAction.dy, 0, state.rows - layer.height);
 }
 
 function handleCellDrag(cell) {
   if (!dragAction) return;
+  cell = toModelCell(cell);
   if (dragAction.type === "import") {
-    state.importPreview = movePreviewToCell(state.importPreview, cell, state.rows, state.cols);
+    moveLayer(state.importPreview, cell);
   } else if (dragAction.type === "paint") {
     state.matrix[cell.row][cell.col] = state.tool === "paint";
   } else if (dragAction.type === "select") {
@@ -276,7 +328,7 @@ function handleCellDrag(cell) {
       height: Math.abs(anchor.row - cell.row) + 1,
     };
   } else if (dragAction.type === "move" || dragAction.type === "floating") {
-    moveFloating(cell);
+    moveLayer(state.floating, cell);
   }
   redraw();
 }
@@ -285,13 +337,13 @@ function handleCellUp() {
   dragAction = null;
 }
 
-const designCanvas = new GridCanvas(elements.patternCanvas, () => state, {
+const designCanvas = new GridCanvas(elements.patternCanvas, viewState, {
   onCellDown: handleCellDown,
   onCellDrag: handleCellDrag,
   onCellUp: handleCellUp,
 });
 
-const weaveCanvas = new GridCanvas(elements.weaveCanvas, () => state, {
+const weaveCanvas = new GridCanvas(elements.weaveCanvas, viewState, {
   readonly: true,
   fitHeight: true,
 });
@@ -299,7 +351,7 @@ weaveCanvas.setPanMode(true);
 
 function updateEditButtons() {
   const hasSelection = Boolean(state.selection);
-  elements.undoBtn.disabled = !undoStack.length && !state.floating;
+  elements.undoBtn.disabled = !undoStack.length && !state.floating && !state.importPreview;
   elements.redoBtn.disabled = !redoStack.length;
   elements.copyBtn.disabled = !hasSelection;
   elements.cutBtn.disabled = !hasSelection;
@@ -319,11 +371,9 @@ function redraw() {
 
 function setMode(mode) {
   commitFloating();
+  cancelImport();
   state.mode = mode;
   state.selection = null;
-  state.importPreview = null;
-  importedImage = null;
-  elements.importControls.hidden = true;
   elements.designView.hidden = mode !== "design";
   elements.weaveView.hidden = mode !== "weave";
   document.querySelectorAll("[data-panel='design']").forEach((panel) => {
@@ -382,8 +432,6 @@ function updateSize() {
   const cols = toInt(elements.colsInput.value, state.cols);
   elements.rowsInput.value = rows;
   elements.colsInput.value = cols;
-  elements.importWidthInput.max = cols;
-  elements.importHeightInput.max = rows;
   if (rows !== state.rows || cols !== state.cols) {
     commitFloating();
     pushHistory();
@@ -401,39 +449,56 @@ function updateSize() {
 
 function refreshImportPreview() {
   if (!importedImage) return;
-  const previousPosition = state.importPreview;
-  const width = toInt(elements.importWidthInput.value, 1, 1, state.cols);
-  const height = toInt(elements.importHeightInput.value, 1, 1, state.rows);
-  elements.importWidthInput.value = width;
-  elements.importHeightInput.value = height;
   state.importPreview = createImportPreview(importedImage, {
-    width,
-    height,
+    width: importedImage.naturalWidth,
+    height: importedImage.naturalHeight,
     rows: state.rows,
     cols: state.cols,
     invert: elements.invertImageInput.checked,
-    previousPosition,
+    previousPosition: state.importPreview,
   });
   redraw();
+}
+
+function showImportError(message) {
+  elements.importError.textContent = message;
+  elements.importError.hidden = !message;
 }
 
 async function handleImageImport(event) {
   const file = event.target.files?.[0];
   if (!file) return;
-  importedImage = await loadImageFromFile(file);
-  const suggested = suggestImportSize(importedImage, state.cols, state.rows);
-  elements.importWidthInput.max = state.cols;
-  elements.importHeightInput.max = state.rows;
-  elements.importWidthInput.value = suggested.width;
-  elements.importHeightInput.value = suggested.height;
+  event.target.value = "";
+  cancelImport();
+  const image = await loadImageFromFile(file);
+  const width = image.naturalWidth;
+  const height = image.naturalHeight;
+  if (width > MAX_SIZE || height > MAX_SIZE) {
+    showImportError(
+      `La imagen mide ${width}×${height} px y el máximo es ${MAX_SIZE}×${MAX_SIZE}. ` +
+        "Redúcela antes de importarla: cada píxel se convierte en una celda.",
+    );
+    return;
+  }
+  importedImage = image;
+  preImportSnapshot = snapshot();
+  if (width > state.cols || height > state.rows) {
+    state.cols = Math.max(state.cols, width);
+    state.rows = Math.max(state.rows, height);
+    state.matrix = resizeMatrix(state.matrix, state.rows, state.cols);
+    elements.rowsInput.value = state.rows;
+    elements.colsInput.value = state.cols;
+    state.selection = null;
+  }
   elements.importControls.hidden = false;
   refreshImportPreview();
-  event.target.value = "";
 }
 
 function stampImport() {
   if (!state.importPreview) return;
-  pushHistory();
+  // Un solo paso de deshacer que incluye el crecimiento del lienzo y el fijado.
+  pushSnapshot(preImportSnapshot ?? snapshot());
+  preImportSnapshot = null;
   state.matrix = stampPreview(state.matrix, state.importPreview);
   state.importPreview = null;
   importedImage = null;
@@ -445,12 +510,20 @@ function cancelImport() {
   state.importPreview = null;
   importedImage = null;
   elements.importControls.hidden = true;
+  showImportError("");
+  if (preImportSnapshot) {
+    // Deshace el crecimiento automático del lienzo sin tocar el historial.
+    const snap = preImportSnapshot;
+    preImportSnapshot = null;
+    applySnapshot(snap);
+    return;
+  }
   redraw();
 }
 
 function renderInstructions() {
-  const instructions = generateInstructions(state.matrix, state.readDirection);
-  elements.currentColumnLabel.textContent = `Columna ${state.activeColumn + 1} de ${state.cols}`;
+  const instructions = generateInstructions(displayMatrix(), state.readDirection);
+  elements.currentColumnLabel.textContent = `Columna ${state.activeColumn + 1} de ${viewCols()}`;
 
   const activeInstruction = instructions.find(
     (instruction) => instruction.column === state.activeColumn,
@@ -506,7 +579,7 @@ function renderInstructions() {
 }
 
 function setActiveColumn(column) {
-  state.activeColumn = Math.max(0, Math.min(state.cols - 1, column));
+  state.activeColumn = Math.max(0, Math.min(viewCols() - 1, column));
   redraw();
 }
 
@@ -539,14 +612,20 @@ function handleKeydown(event) {
     event.preventDefault();
     deleteSelection();
   } else if (key === "escape") {
-    if (state.floating) {
+    if (state.importPreview) {
+      cancelImport();
+    } else if (state.floating) {
       cancelFloating();
     } else if (state.selection) {
       state.selection = null;
       redraw();
     }
   } else if (key === "enter") {
-    commitFloating();
+    if (state.importPreview) {
+      stampImport();
+    } else {
+      commitFloating();
+    }
   } else if (!ctrl && !event.altKey && key === "p") {
     setTool("paint");
   } else if (!ctrl && !event.altKey && key === "b") {
@@ -563,6 +642,17 @@ function bindEvents() {
   elements.colsInput.addEventListener("change", updateSize);
   elements.tallCellsInput.addEventListener("change", (event) => {
     state.tallCells = event.target.checked;
+    elements.widePixelsRow.hidden = !state.tallCells;
+    if (!state.tallCells) {
+      state.widePixels = false;
+      elements.widePixelsInput.checked = false;
+    }
+    state.activeColumn = Math.min(state.activeColumn, viewCols() - 1);
+    redraw();
+  });
+  elements.widePixelsInput.addEventListener("change", (event) => {
+    state.widePixels = event.target.checked;
+    state.activeColumn = Math.min(state.activeColumn, viewCols() - 1);
     redraw();
   });
   elements.toolButtons.forEach((button) => {
@@ -586,13 +676,9 @@ function bindEvents() {
   elements.zoomFitBtn.addEventListener("click", () => applyZoom(1));
   elements.panBtn.addEventListener("click", togglePan);
   elements.imageInput.addEventListener("change", handleImageImport);
-  elements.importWidthInput.addEventListener("change", refreshImportPreview);
-  elements.importHeightInput.addEventListener("change", refreshImportPreview);
   elements.invertImageInput.addEventListener("change", refreshImportPreview);
-  elements.stampImportBtn.addEventListener("click", stampImport);
-  elements.cancelImportBtn.addEventListener("click", cancelImport);
   elements.exportBtn.addEventListener("click", () =>
-    exportMatrixAsPng(state.matrix, state.tallCells),
+    exportMatrixAsPng(displayMatrix(), state.tallCells),
   );
   elements.designModeBtn.addEventListener("click", () => setMode("design"));
   elements.weaveModeBtn.addEventListener("click", () => setMode("weave"));

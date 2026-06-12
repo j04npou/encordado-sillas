@@ -51,6 +51,7 @@ export const state = {
   mode: "design",
   readDirection: "bottom-up",
   tallCells: false,
+  widePixels: false,
   activeColumn: 0,
   importPreview: null,
   selection: null,

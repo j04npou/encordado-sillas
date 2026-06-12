@@ -13,22 +13,6 @@ export async function loadImageFromFile(file) {
   }
 }
 
-export function suggestImportSize(image, cols, rows) {
-  const maxWidth = Math.max(1, Math.floor(cols * 0.7));
-  const maxHeight = Math.max(1, Math.floor(rows * 0.7));
-  const ratio = image.naturalWidth / image.naturalHeight || 1;
-  let width = Math.min(maxWidth, image.naturalWidth);
-  let height = Math.round(width / ratio);
-  if (height > maxHeight) {
-    height = maxHeight;
-    width = Math.round(height * ratio);
-  }
-  return {
-    width: clamp(width, 1, cols),
-    height: clamp(height, 1, rows),
-  };
-}
-
 export function imageToCells(image, width, height, invert = false) {
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -76,12 +60,6 @@ export function createImportPreview(image, options) {
     y: clamp(previousY, 0, rows - safeHeight),
     cells: imageToCells(image, safeWidth, safeHeight, invert),
   };
-}
-
-export function movePreviewToCell(preview, cell, rows, cols) {
-  const x = clamp(cell.col - Math.floor(preview.width / 2), 0, cols - preview.width);
-  const y = clamp(cell.row - Math.floor(preview.height / 2), 0, rows - preview.height);
-  return { ...preview, x, y };
 }
 
 export function stampPreview(matrix, preview) {

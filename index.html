@@ -39,6 +39,10 @@
             <input id="tallCellsInput" type="checkbox" />
             <span>Proporción real (alto ×2)</span>
           </label>
+          <label class="check-row" id="widePixelsRow" hidden>
+            <input id="widePixelsInput" type="checkbox" />
+            <span>Píxel cuadrado (duplica columnas)</span>
+          </label>
         </section>
 
         <section class="tool-section" data-panel="design">
@@ -144,25 +148,16 @@
             <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" />
             Importar imagen
           </label>
+          <p class="import-error" id="importError" hidden></p>
           <div class="import-controls" id="importControls" hidden>
-            <div class="field-grid">
-              <label>
-                <span>Ancho</span>
-                <input id="importWidthInput" type="number" min="1" max="120" value="12" />
-              </label>
-              <label>
-                <span>Alto</span>
-                <input id="importHeightInput" type="number" min="1" max="120" value="12" />
-              </label>
-            </div>
             <label class="check-row">
               <input id="invertImageInput" type="checkbox" />
               <span>Invertir lectura</span>
             </label>
-            <div class="button-row">
-              <button class="primary-button" id="stampImportBtn" type="button">Fijar</button>
-              <button class="ghost-button" id="cancelImportBtn" type="button">Cancelar</button>
-            </div>
+            <p class="import-hint">
+              Arrastra la imagen para colocarla. Pulsa fuera o Enter para fijarla; Escape o
+              Deshacer para cancelar.
+            </p>
           </div>
         </section>
 
