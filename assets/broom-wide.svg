@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 575.77502 575.97498"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="broom-wide.svg"
+   width="575.77502"
+   height="575.97498"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:zoom="0.9171875"
+     inkscape:cx="287.83646"
+     inkscape:cy="288.3816"
+     inkscape:window-width="1536"
+     inkscape:window-height="795"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <path
+     fill="currentColor"
+     d="m 566.6,9.375 c -12.5,-12.5 -32.8,-12.5 -45.3,0 l -192,192 -15.8,-15.8 c -15.2,-15.2 -38.5,-18.4 -57.3,-8 l -32.5,18 156.5,156.5 18,-32.5 c 10.4,-18.7 7.1,-42.1 -8,-57.3 l -15.8,-15.8 192,-192 c 12.5,-12.5 12.5,-32.8 0,-45.3 z m -379.1,206.4 -171.1,95.1 c -10.1,5.6 -16.4,16.3 -16.4,27.9 0,8.4 3.4,16.6 9.3,22.5 l 43.2,43.2 c 2.1,2.1 5.3,2.9 8.2,1.9 l 52.1,-17.4 c 6.3,-2.1 12.2,3.9 10.1,10.1 l -17.4,52.1 c -1,2.9 -0.2,6 1.9,8.2 l 107.3,107.3 c 6,6 14.1,9.3 22.6,9.3 11.6,0 22.3,-6.3 27.9,-16.4 l 95.1,-171.1 -172.7,-172.7 z"
+     id="path1" />
+</svg>

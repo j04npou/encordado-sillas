@@ -44,10 +44,98 @@
         <section class="tool-section" data-panel="design">
           <h2>Dibujo</h2>
           <div class="segmented" aria-label="Herramienta activa">
-            <button class="segment is-active" id="paintToolBtn" type="button">Pintar</button>
-            <button class="segment" id="eraseToolBtn" type="button">Borrar</button>
+            <button class="segment labeled-button is-active" data-tool="paint" type="button">
+              <span class="button-line">
+                <span class="button-icon" style="--icon: url('assets/pencil.svg')" aria-hidden="true"></span>
+                <span>Pintar</span>
+              </span>
+              <kbd class="key-hint">P</kbd>
+            </button>
+            <button class="segment labeled-button" data-tool="erase" type="button">
+              <span class="button-line">
+                <span class="button-icon" style="--icon: url('assets/eraser.svg')" aria-hidden="true"></span>
+                <span>Borrar</span>
+              </span>
+              <kbd class="key-hint">B</kbd>
+            </button>
+            <button class="segment labeled-button" data-tool="select" type="button">
+              <span class="button-line">
+                <span class="button-icon" style="--icon: url('assets/square-dashed.svg')" aria-hidden="true"></span>
+                <span>Seleccionar</span>
+              </span>
+              <kbd class="key-hint">S</kbd>
+            </button>
+            <button class="segment labeled-button" data-tool="move" type="button">
+              <span class="button-line">
+                <span class="button-icon" style="--icon: url('assets/arrows-alt.svg')" aria-hidden="true"></span>
+                <span>Mover</span>
+              </span>
+              <kbd class="key-hint">M</kbd>
+            </button>
           </div>
-          <button class="ghost-button" id="clearBtn" type="button">Limpiar cuadrícula</button>
+          <button class="ghost-button labeled-button" id="clearBtn" type="button">
+            <span class="button-line">
+              <span class="button-icon" style="--icon: url('assets/broom-wide.svg')" aria-hidden="true"></span>
+              <span>Limpiar cuadrícula</span>
+            </span>
+          </button>
+        </section>
+
+        <section class="tool-section" data-panel="design">
+          <h2>Edición</h2>
+          <div class="button-row">
+            <button class="ghost-button labeled-button" id="undoBtn" type="button" title="Deshacer">
+              <span class="button-line">
+                <span class="button-icon" style="--icon: url('assets/undo.svg')" aria-hidden="true"></span>
+                <span>Deshacer</span>
+              </span>
+              <kbd class="key-hint">Ctrl+Z</kbd>
+            </button>
+            <button class="ghost-button labeled-button" id="redoBtn" type="button" title="Rehacer">
+              <span class="button-line">
+                <span class="button-icon" style="--icon: url('assets/redo.svg')" aria-hidden="true"></span>
+                <span>Rehacer</span>
+              </span>
+              <kbd class="key-hint">Ctrl+Y</kbd>
+            </button>
+          </div>
+          <div class="button-row">
+            <button class="ghost-button labeled-button" id="copyBtn" type="button" title="Copiar la selección">
+              <span class="button-line">
+                <span class="button-icon" style="--icon: url('assets/copy.svg')" aria-hidden="true"></span>
+                <span>Copiar</span>
+              </span>
+              <kbd class="key-hint">Ctrl+C</kbd>
+            </button>
+            <button class="ghost-button labeled-button" id="cutBtn" type="button" title="Cortar la selección">
+              <span class="button-line">
+                <span class="button-icon" style="--icon: url('assets/scissors.svg')" aria-hidden="true"></span>
+                <span>Cortar</span>
+              </span>
+              <kbd class="key-hint">Ctrl+X</kbd>
+            </button>
+          </div>
+          <div class="button-row">
+            <button class="ghost-button labeled-button" id="pasteBtn" type="button" title="Pegar el portapapeles">
+              <span class="button-line">
+                <span class="button-icon" style="--icon: url('assets/paste.svg')" aria-hidden="true"></span>
+                <span>Pegar</span>
+              </span>
+              <kbd class="key-hint">Ctrl+V</kbd>
+            </button>
+            <button
+              class="ghost-button labeled-button"
+              id="deleteSelBtn"
+              type="button"
+              title="Eliminar el contenido de la selección"
+            >
+              <span class="button-line">
+                <span class="button-icon" style="--icon: url('assets/trash.svg')" aria-hidden="true"></span>
+                <span>Eliminar</span>
+              </span>
+              <kbd class="key-hint">Supr</kbd>
+            </button>
+          </div>
         </section>
 
         <section class="tool-section" data-panel="design">
@@ -99,6 +187,16 @@
         <section class="canvas-area" id="designView" aria-label="Lienzo de diseño">
           <div class="canvas-frame">
             <canvas id="patternCanvas" width="960" height="720"></canvas>
+          </div>
+          <div class="canvas-controls" role="group" aria-label="Controles de vista">
+            <button id="zoomInBtn" type="button" title="Acercar" aria-label="Acercar">+</button>
+            <button id="zoomOutBtn" type="button" title="Alejar" aria-label="Alejar">−</button>
+            <button id="zoomFitBtn" type="button" title="Ajustar a la pantalla" aria-label="Ajustar a la pantalla">
+              1:1
+            </button>
+            <button id="panBtn" type="button" title="Desplazar la vista" aria-label="Desplazar la vista">
+              <span class="button-icon" style="--icon: url('assets/arrows-alt.svg')" aria-hidden="true"></span>
+            </button>
           </div>
         </section>
 

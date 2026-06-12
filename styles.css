@@ -43,6 +43,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .app-shell {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
@@ -147,6 +152,42 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
+.labeled-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 6px;
+  font-size: 0.85rem;
+}
+
+.button-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.button-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  background: currentColor;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+  mask: var(--icon) center / contain no-repeat;
+}
+
+.key-hint {
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(34, 32, 29, 0.04);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
 .check-row {
   display: flex;
   align-items: center;
@@ -224,17 +265,52 @@ button:focus-visible {
 }
 
 .canvas-area {
+  position: relative;
   display: grid;
   place-items: center;
 }
 
-.canvas-frame {
+.canvas-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 4;
   display: grid;
+  gap: 6px;
+}
+
+.canvas-controls button {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 4px 14px rgba(34, 32, 29, 0.12);
+}
+
+.canvas-controls button.is-active {
+  border-color: var(--active);
+  background: var(--active);
+  color: #fff;
+}
+
+.canvas-controls .button-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.canvas-frame {
+  display: flex;
   width: 100%;
   height: 100%;
   max-width: 1120px;
   max-height: 780px;
-  place-items: center;
   border: 1px solid var(--line);
   border-radius: 8px;
   background:
@@ -254,6 +330,7 @@ button:focus-visible {
 
 canvas {
   display: block;
+  margin: auto;
   cursor: crosshair;
   touch-action: none;
 }
@@ -341,6 +418,11 @@ canvas {
 
 .weave-preview .canvas-frame {
   max-height: none;
+}
+
+.weave-preview canvas {
+  cursor: grab;
+  touch-action: auto;
 }
 
 .icon-button {
@@ -457,6 +539,10 @@ details[open] > .instructions-head .chevron {
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;
+  }
+
+  .key-hint {
+    display: none;
   }
 
   .tool-panel {

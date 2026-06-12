@@ -15,6 +15,24 @@ export function resizeMatrix(matrix, rows, cols) {
   return next;
 }
 
+export function cloneMatrix(matrix) {
+  return matrix.map((row) => [...row]);
+}
+
+export function extractRegion(matrix, rect) {
+  return Array.from({ length: rect.height }, (_, row) =>
+    Array.from({ length: rect.width }, (_, col) => matrix[rect.y + row][rect.x + col]),
+  );
+}
+
+export function clearRegion(matrix, rect) {
+  for (let row = 0; row < rect.height; row += 1) {
+    for (let col = 0; col < rect.width; col += 1) {
+      matrix[rect.y + row][rect.x + col] = false;
+    }
+  }
+}
+
 export function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
@@ -35,4 +53,7 @@ export const state = {
   tallCells: false,
   activeColumn: 0,
   importPreview: null,
+  selection: null,
+  floating: null,
+  clipboard: null,
 };

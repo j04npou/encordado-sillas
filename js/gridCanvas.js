@@ -1,5 +1,8 @@
 import { clamp } from "./state.js";
 
+export const MIN_ZOOM = 1;
+export const MAX_ZOOM = 8;
+
 const COLORS = {
   background: "#fbfcfb",
   active: "#163f39",
@@ -12,6 +15,8 @@ const COLORS = {
   previewBorder: "#c44e35",
   highlight: "rgba(196, 78, 53, 0.22)",
   highlightStroke: "#c44e35",
+  selection: "rgba(30, 124, 107, 0.16)",
+  selectionStroke: "#1e7c6b",
 };
 
 export class GridCanvas {
@@ -20,16 +25,21 @@ export class GridCanvas {
     this.ctx = canvas.getContext("2d");
     this.getState = getState;
     this.readonly = options.readonly ?? false;
-    this.onPaintCell = options.onPaintCell ?? null;
-    this.onPreviewMove = options.onPreviewMove ?? null;
+    this.fitHeight = options.fitHeight ?? false;
+    this.onCellDown = options.onCellDown ?? null;
+    this.onCellDrag = options.onCellDrag ?? null;
+    this.onCellUp = options.onCellUp ?? null;
     this.cellWidth = 24;
     this.cellHeight = 24;
     this.gridWidth = 0;
     this.gridHeight = 0;
     this.offsetX = 0;
     this.offsetY = 0;
+    this.zoom = 1;
+    this.panMode = false;
+    this.panStart = null;
     this.isPointerDown = false;
-    this.lastPaintedKey = "";
+    this.lastCellKey = "";
 
     this.handleResize = this.handleResize.bind(this);
     this.handlePointerDown = this.handlePointerDown.bind(this);
@@ -39,6 +49,7 @@ export class GridCanvas {
     window.addEventListener("resize", this.handleResize);
     this.canvas.addEventListener("pointerdown", this.handlePointerDown);
     this.canvas.addEventListener("pointermove", this.handlePointerMove);
+    this.canvas.addEventListener("pointercancel", this.handlePointerUp);
     window.addEventListener("pointerup", this.handlePointerUp);
     this.handleResize();
   }
@@ -47,19 +58,42 @@ export class GridCanvas {
     window.removeEventListener("resize", this.handleResize);
     this.canvas.removeEventListener("pointerdown", this.handlePointerDown);
     this.canvas.removeEventListener("pointermove", this.handlePointerMove);
+    this.canvas.removeEventListener("pointercancel", this.handlePointerUp);
     window.removeEventListener("pointerup", this.handlePointerUp);
   }
 
   handleResize() {
+    const measured = this.applyLayout();
+    const parent = this.canvas.parentElement;
+    // Al dimensionar puede aparecer o desaparecer una barra de scroll del marco,
+    // cambiando el hueco disponible: si es así, se redimensiona con la medida nueva.
+    if (
+      parent &&
+      (parent.clientWidth !== measured.width || parent.clientHeight !== measured.height)
+    ) {
+      this.applyLayout();
+    }
+    this.draw();
+  }
+
+  applyLayout() {
     const parent = this.canvas.parentElement;
     const parentWidth = parent?.clientWidth ?? 800;
     const parentHeight = parent?.clientHeight ?? 600;
     const { rows, cols, tallCells } = this.getState();
     const aspect = tallCells ? 2 : 1;
-    const maxCellByWidth = Math.floor((parentWidth - 32) / cols);
-    const maxCellByHeight = Math.floor((parentHeight - 32) / (rows * aspect));
-    this.cellWidth = clamp(Math.min(maxCellByWidth, maxCellByHeight), 6, 34);
-    this.cellHeight = this.cellWidth * aspect;
+    if (this.fitHeight) {
+      // Llena la altura exacta del marco; las celdas pueden ser fraccionarias,
+      // así no se acumula el error de redondeo (visible sobre todo con alto ×2).
+      this.cellHeight = Math.max(8, parentHeight / rows);
+      this.cellWidth = this.cellHeight / aspect;
+    } else {
+      const maxCellByWidth = Math.floor((parentWidth - 32) / cols);
+      const maxCellByHeight = Math.floor((parentHeight - 32) / (rows * aspect));
+      const fitted = clamp(Math.min(maxCellByWidth, maxCellByHeight), 6, 34);
+      this.cellWidth = Math.round(fitted * this.zoom);
+      this.cellHeight = this.cellWidth * aspect;
+    }
     this.gridWidth = cols * this.cellWidth;
     this.gridHeight = rows * this.cellHeight;
     const dpr = window.devicePixelRatio || 1;
@@ -68,11 +102,38 @@ export class GridCanvas {
     this.canvas.width = Math.round(this.gridWidth * dpr);
     this.canvas.height = Math.round(this.gridHeight * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    this.draw();
+    return { width: parentWidth, height: parentHeight };
+  }
+
+  setZoom(zoom) {
+    const next = clamp(zoom, MIN_ZOOM, MAX_ZOOM);
+    if (next === this.zoom) return;
+    const frame = this.canvas.parentElement;
+    const centerX = (frame.scrollLeft + frame.clientWidth / 2) / Math.max(1, this.gridWidth);
+    const centerY = (frame.scrollTop + frame.clientHeight / 2) / Math.max(1, this.gridHeight);
+    this.zoom = next;
+    this.handleResize();
+    frame.scrollLeft = centerX * this.gridWidth - frame.clientWidth / 2;
+    frame.scrollTop = centerY * this.gridHeight - frame.clientHeight / 2;
+  }
+
+  setPanMode(enabled) {
+    this.panMode = enabled;
+    this.panStart = null;
+    // Con pan activo se permite el gesto táctil nativo (scroll del marco y de la página).
+    this.canvas.style.touchAction = enabled ? "auto" : "";
+  }
+
+  centerColumn(column) {
+    const frame = this.canvas.parentElement;
+    if (!frame) return;
+    const target = (column + 0.5) * this.cellWidth - frame.clientWidth / 2;
+    frame.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
   }
 
   draw() {
-    const { rows, cols, matrix, importPreview, activeColumn, mode } = this.getState();
+    const { rows, cols, matrix, importPreview, activeColumn, mode, floating, selection } =
+      this.getState();
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.gridWidth, this.gridHeight);
     ctx.fillStyle = COLORS.background;
@@ -94,6 +155,29 @@ export class GridCanvas {
     if (importPreview) {
       this.drawPreview(importPreview);
     }
+
+    if (floating) {
+      this.drawPreview(floating);
+    }
+
+    if (selection && !this.readonly) {
+      this.drawSelection(selection);
+    }
+  }
+
+  drawSelection(selection) {
+    const ctx = this.ctx;
+    const x = selection.x * this.cellWidth;
+    const y = selection.y * this.cellHeight;
+    const width = selection.width * this.cellWidth;
+    const height = selection.height * this.cellHeight;
+    ctx.fillStyle = COLORS.selection;
+    ctx.fillRect(x, y, width, height);
+    ctx.strokeStyle = COLORS.selectionStroke;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeRect(x + 1, y + 1, width - 2, height - 2);
+    ctx.setLineDash([]);
   }
 
   drawGrid(rows, cols) {
@@ -150,50 +234,62 @@ export class GridCanvas {
     );
   }
 
-  getCellFromEvent(event) {
+  getCellFromEvent(event, clampToGrid = false) {
     const rect = this.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     const col = Math.floor(x / this.cellWidth);
     const row = Math.floor(y / this.cellHeight);
     const { rows, cols } = this.getState();
+    if (clampToGrid) {
+      return { row: clamp(row, 0, rows - 1), col: clamp(col, 0, cols - 1) };
+    }
     if (row < 0 || col < 0 || row >= rows || col >= cols) return null;
     return { row, col };
   }
 
   handlePointerDown(event) {
-    const cell = this.getCellFromEvent(event);
-    if (!cell || this.readonly) return;
-    this.canvas.setPointerCapture(event.pointerId);
-    this.isPointerDown = true;
-    this.lastPaintedKey = "";
-    if (this.getState().importPreview && this.onPreviewMove) {
-      this.onPreviewMove(cell);
+    if (this.panMode) {
+      const frame = this.canvas.parentElement;
+      this.panStart = {
+        x: event.clientX,
+        y: event.clientY,
+        left: frame.scrollLeft,
+        top: frame.scrollTop,
+      };
+      this.canvas.setPointerCapture(event.pointerId);
       return;
     }
-    this.applyPointerAction(cell);
+    if (this.readonly) return;
+    const cell = this.getCellFromEvent(event);
+    if (!cell) return;
+    this.canvas.setPointerCapture(event.pointerId);
+    this.isPointerDown = true;
+    this.lastCellKey = `${cell.row}:${cell.col}`;
+    this.onCellDown?.(cell);
   }
 
   handlePointerMove(event) {
-    const cell = this.getCellFromEvent(event);
-    const { importPreview } = this.getState();
-    if (importPreview && this.isPointerDown && cell && this.onPreviewMove) {
-      this.onPreviewMove(cell);
+    if (this.panMode) {
+      if (!this.panStart) return;
+      const frame = this.canvas.parentElement;
+      frame.scrollLeft = this.panStart.left - (event.clientX - this.panStart.x);
+      frame.scrollTop = this.panStart.top - (event.clientY - this.panStart.y);
       return;
     }
-    if (!this.isPointerDown || !cell || this.readonly) return;
-    this.applyPointerAction(cell);
+    if (!this.isPointerDown || this.readonly) return;
+    const cell = this.getCellFromEvent(event, true);
+    const key = `${cell.row}:${cell.col}`;
+    if (key === this.lastCellKey) return;
+    this.lastCellKey = key;
+    this.onCellDrag?.(cell);
   }
 
   handlePointerUp() {
+    this.panStart = null;
+    if (!this.isPointerDown) return;
     this.isPointerDown = false;
-    this.lastPaintedKey = "";
-  }
-
-  applyPointerAction(cell) {
-    const key = `${cell.row}:${cell.col}`;
-    if (key === this.lastPaintedKey) return;
-    this.lastPaintedKey = key;
-    this.onPaintCell?.(cell);
+    this.lastCellKey = "";
+    this.onCellUp?.();
   }
 }
