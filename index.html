@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cordar Cadires - Patronaje de tejido</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="tool-panel" aria-label="Herramientas de patronaje">
+        <div class="brand-block">
+          <p class="eyebrow">Cordado / Cestería</p>
+          <h1>Patrones de tejido</h1>
+        </div>
+
+        <div class="mode-tabs" role="tablist" aria-label="Modo de trabajo">
+          <button class="mode-tab is-active" id="designModeBtn" type="button" role="tab" aria-selected="true">
+            Diseño
+          </button>
+          <button class="mode-tab" id="weaveModeBtn" type="button" role="tab" aria-selected="false">
+            Tejer
+          </button>
+        </div>
+
+        <section class="tool-section" data-panel="design">
+          <h2>Tamaño</h2>
+          <div class="field-grid">
+            <label>
+              <span>Filas</span>
+              <input id="rowsInput" type="number" min="1" max="120" value="18" />
+            </label>
+            <label>
+              <span>Columnas</span>
+              <input id="colsInput" type="number" min="1" max="120" value="24" />
+            </label>
+          </div>
+        </section>
+
+        <section class="tool-section" data-panel="design">
+          <h2>Dibujo</h2>
+          <div class="segmented" aria-label="Herramienta activa">
+            <button class="segment is-active" id="paintToolBtn" type="button">Pintar</button>
+            <button class="segment" id="eraseToolBtn" type="button">Borrar</button>
+          </div>
+          <button class="ghost-button" id="clearBtn" type="button">Limpiar cuadrícula</button>
+        </section>
+
+        <section class="tool-section" data-panel="design">
+          <h2>Pixel art</h2>
+          <label class="file-button">
+            <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" />
+            Importar imagen
+          </label>
+          <div class="import-controls" id="importControls" hidden>
+            <div class="field-grid">
+              <label>
+                <span>Ancho</span>
+                <input id="importWidthInput" type="number" min="1" max="120" value="12" />
+              </label>
+              <label>
+                <span>Alto</span>
+                <input id="importHeightInput" type="number" min="1" max="120" value="12" />
+              </label>
+            </div>
+            <label class="check-row">
+              <input id="invertImageInput" type="checkbox" />
+              <span>Invertir lectura</span>
+            </label>
+            <div class="button-row">
+              <button class="primary-button" id="stampImportBtn" type="button">Fijar</button>
+              <button class="ghost-button" id="cancelImportBtn" type="button">Cancelar</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="tool-section">
+          <h2>Salida</h2>
+          <button class="primary-button" id="exportBtn" type="button">Exportar diseño PNG</button>
+        </section>
+
+        <section class="tool-section" data-panel="weave" hidden>
+          <h2>Lectura</h2>
+          <label>
+            <span>Dirección</span>
+            <select id="directionInput">
+              <option value="top-down">Arriba hacia abajo</option>
+              <option value="bottom-up">Abajo hacia arriba</option>
+            </select>
+          </label>
+        </section>
+      </aside>
+
+      <main class="workspace">
+        <section class="canvas-area" id="designView" aria-label="Lienzo de diseño">
+          <div class="canvas-frame">
+            <canvas id="patternCanvas" width="960" height="720"></canvas>
+          </div>
+        </section>
+
+        <section class="weave-area" id="weaveView" hidden aria-label="Instrucciones de tejido">
+          <div class="weave-focus" id="weaveFocus" aria-live="polite">
+            <button class="icon-button" id="prevColumnBtn" type="button" aria-label="Columna anterior">‹</button>
+            <div class="focus-body">
+              <p class="eyebrow">Columna actual</p>
+              <strong id="currentColumnLabel">Columna 1</strong>
+              <div class="focus-tiles" id="currentColumnTiles"></div>
+            </div>
+            <button class="icon-button" id="nextColumnBtn" type="button" aria-label="Columna siguiente">›</button>
+          </div>
+          <div class="weave-preview">
+            <div class="canvas-frame">
+              <canvas id="weaveCanvas" width="720" height="720"></canvas>
+            </div>
+          </div>
+          <details class="instructions-panel" id="instructionsPanel">
+            <summary class="instructions-head">
+              <div>
+                <p class="eyebrow">Secuencia</p>
+                <h2>Instrucciones por columna</h2>
+              </div>
+              <span class="chevron" aria-hidden="true">›</span>
+            </summary>
+            <div class="instructions-list" id="instructionsList"></div>
+          </details>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
