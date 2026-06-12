@@ -10,7 +10,7 @@
     <div class="app-shell">
       <aside class="tool-panel" aria-label="Herramientas de patronaje">
         <div class="brand-block">
-          <p class="eyebrow">Cordado / Cestería</p>
+          <p class="eyebrow">Encordado de sillas</p>
           <h1>Patrones de tejido</h1>
         </div>
 
@@ -35,6 +35,10 @@
               <input id="colsInput" type="number" min="1" max="120" value="24" />
             </label>
           </div>
+          <label class="check-row">
+            <input id="tallCellsInput" type="checkbox" />
+            <span>Proporción real (alto ×2)</span>
+          </label>
         </section>
 
         <section class="tool-section" data-panel="design">
@@ -74,7 +78,7 @@
           </div>
         </section>
 
-        <section class="tool-section">
+        <section class="tool-section" data-panel="design">
           <h2>Salida</h2>
           <button class="primary-button" id="exportBtn" type="button">Exportar diseño PNG</button>
         </section>
@@ -85,7 +89,7 @@
             <span>Dirección</span>
             <select id="directionInput">
               <option value="top-down">Arriba hacia abajo</option>
-              <option value="bottom-up">Abajo hacia arriba</option>
+              <option value="bottom-up" selected>Abajo hacia arriba</option>
             </select>
           </label>
         </section>

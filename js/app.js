@@ -13,6 +13,7 @@ import { generateInstructions } from "./weaving.js";
 const elements = {
   rowsInput: document.querySelector("#rowsInput"),
   colsInput: document.querySelector("#colsInput"),
+  tallCellsInput: document.querySelector("#tallCellsInput"),
   paintToolBtn: document.querySelector("#paintToolBtn"),
   eraseToolBtn: document.querySelector("#eraseToolBtn"),
   clearBtn: document.querySelector("#clearBtn"),
@@ -231,6 +232,10 @@ function setActiveColumn(column) {
 function bindEvents() {
   elements.rowsInput.addEventListener("change", updateSize);
   elements.colsInput.addEventListener("change", updateSize);
+  elements.tallCellsInput.addEventListener("change", (event) => {
+    state.tallCells = event.target.checked;
+    redraw();
+  });
   elements.paintToolBtn.addEventListener("click", () => setTool("paint"));
   elements.eraseToolBtn.addEventListener("click", () => setTool("erase"));
   elements.clearBtn.addEventListener("click", () => {
@@ -243,7 +248,9 @@ function bindEvents() {
   elements.invertImageInput.addEventListener("change", refreshImportPreview);
   elements.stampImportBtn.addEventListener("click", stampImport);
   elements.cancelImportBtn.addEventListener("click", cancelImport);
-  elements.exportBtn.addEventListener("click", () => exportMatrixAsPng(state.matrix));
+  elements.exportBtn.addEventListener("click", () =>
+    exportMatrixAsPng(state.matrix, state.tallCells),
+  );
   elements.designModeBtn.addEventListener("click", () => setMode("design"));
   elements.weaveModeBtn.addEventListener("click", () => setMode("weave"));
   elements.directionInput.addEventListener("change", (event) => {

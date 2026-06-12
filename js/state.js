@@ -31,7 +31,8 @@ export const state = {
   matrix: createMatrix(18, 24),
   tool: "paint",
   mode: "design",
-  readDirection: "top-down",
+  readDirection: "bottom-up",
+  tallCells: false,
   activeColumn: 0,
   importPreview: null,
 };

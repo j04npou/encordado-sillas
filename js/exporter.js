@@ -1,10 +1,12 @@
-export function exportMatrixAsPng(matrix, filename = "patron-cordado.png") {
+export function exportMatrixAsPng(matrix, tallCells = false, filename = "patron-cordado.png") {
   const rows = matrix.length;
   const cols = matrix[0]?.length ?? 0;
-  const scale = Math.max(8, Math.min(32, Math.floor(1600 / Math.max(rows, cols))));
+  const aspect = tallCells ? 2 : 1;
+  const scale = Math.max(8, Math.min(32, Math.floor(1600 / Math.max(rows * aspect, cols))));
+  const cellHeight = scale * aspect;
   const canvas = document.createElement("canvas");
   canvas.width = cols * scale;
-  canvas.height = rows * scale;
+  canvas.height = rows * cellHeight;
   const ctx = canvas.getContext("2d");
   ctx.imageSmoothingEnabled = false;
   ctx.fillStyle = "#fbfcfb";
@@ -13,7 +15,7 @@ export function exportMatrixAsPng(matrix, filename = "patron-cordado.png") {
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
       ctx.fillStyle = matrix[row][col] ? "#163f39" : "#fbfcfb";
-      ctx.fillRect(col * scale, row * scale, scale, scale);
+      ctx.fillRect(col * scale, row * cellHeight, scale, cellHeight);
     }
   }
 
@@ -27,8 +29,8 @@ export function exportMatrixAsPng(matrix, filename = "patron-cordado.png") {
   }
   for (let row = 0; row <= rows; row += 1) {
     ctx.beginPath();
-    ctx.moveTo(0, row * scale + 0.5);
-    ctx.lineTo(canvas.width, row * scale + 0.5);
+    ctx.moveTo(0, row * cellHeight + 0.5);
+    ctx.lineTo(canvas.width, row * cellHeight + 0.5);
     ctx.stroke();
   }
 

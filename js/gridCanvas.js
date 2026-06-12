@@ -22,7 +22,8 @@ export class GridCanvas {
     this.readonly = options.readonly ?? false;
     this.onPaintCell = options.onPaintCell ?? null;
     this.onPreviewMove = options.onPreviewMove ?? null;
-    this.cellSize = 24;
+    this.cellWidth = 24;
+    this.cellHeight = 24;
     this.gridWidth = 0;
     this.gridHeight = 0;
     this.offsetX = 0;
@@ -53,12 +54,14 @@ export class GridCanvas {
     const parent = this.canvas.parentElement;
     const parentWidth = parent?.clientWidth ?? 800;
     const parentHeight = parent?.clientHeight ?? 600;
-    const { rows, cols } = this.getState();
+    const { rows, cols, tallCells } = this.getState();
+    const aspect = tallCells ? 2 : 1;
     const maxCellByWidth = Math.floor((parentWidth - 32) / cols);
-    const maxCellByHeight = Math.floor((parentHeight - 32) / rows);
-    this.cellSize = clamp(Math.min(maxCellByWidth, maxCellByHeight), 6, 34);
-    this.gridWidth = cols * this.cellSize;
-    this.gridHeight = rows * this.cellSize;
+    const maxCellByHeight = Math.floor((parentHeight - 32) / (rows * aspect));
+    this.cellWidth = clamp(Math.min(maxCellByWidth, maxCellByHeight), 6, 34);
+    this.cellHeight = this.cellWidth * aspect;
+    this.gridWidth = cols * this.cellWidth;
+    this.gridHeight = rows * this.cellHeight;
     const dpr = window.devicePixelRatio || 1;
     this.canvas.style.width = `${this.gridWidth}px`;
     this.canvas.style.height = `${this.gridHeight}px`;
@@ -78,7 +81,7 @@ export class GridCanvas {
     for (let row = 0; row < rows; row += 1) {
       for (let col = 0; col < cols; col += 1) {
         ctx.fillStyle = matrix[row][col] ? COLORS.active : COLORS.inactive;
-        ctx.fillRect(col * this.cellSize, row * this.cellSize, this.cellSize, this.cellSize);
+        ctx.fillRect(col * this.cellWidth, row * this.cellHeight, this.cellWidth, this.cellHeight);
       }
     }
 
@@ -98,7 +101,7 @@ export class GridCanvas {
     ctx.lineWidth = 1;
     for (let col = 0; col <= cols; col += 1) {
       ctx.strokeStyle = col % 5 === 0 ? COLORS.majorGrid : COLORS.grid;
-      const x = col * this.cellSize + 0.5;
+      const x = col * this.cellWidth + 0.5;
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, this.gridHeight);
@@ -106,7 +109,7 @@ export class GridCanvas {
     }
     for (let row = 0; row <= rows; row += 1) {
       ctx.strokeStyle = row % 5 === 0 ? COLORS.majorGrid : COLORS.grid;
-      const y = row * this.cellSize + 0.5;
+      const y = row * this.cellHeight + 0.5;
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(this.gridWidth, y);
@@ -116,12 +119,12 @@ export class GridCanvas {
 
   drawColumnHighlight(activeColumn) {
     const ctx = this.ctx;
-    const x = activeColumn * this.cellSize;
+    const x = activeColumn * this.cellWidth;
     ctx.fillStyle = COLORS.highlight;
-    ctx.fillRect(x, 0, this.cellSize, this.gridHeight);
+    ctx.fillRect(x, 0, this.cellWidth, this.gridHeight);
     ctx.strokeStyle = COLORS.highlightStroke;
     ctx.lineWidth = 3;
-    ctx.strokeRect(x + 1.5, 1.5, this.cellSize - 3, this.gridHeight - 3);
+    ctx.strokeRect(x + 1.5, 1.5, this.cellWidth - 3, this.gridHeight - 3);
   }
 
   drawPreview(preview) {
@@ -130,20 +133,20 @@ export class GridCanvas {
     for (let row = 0; row < height; row += 1) {
       for (let col = 0; col < width; col += 1) {
         const cell = cells[row][col];
-        const drawX = (x + col) * this.cellSize;
-        const drawY = (y + row) * this.cellSize;
+        const drawX = (x + col) * this.cellWidth;
+        const drawY = (y + row) * this.cellHeight;
         ctx.fillStyle =
           cell === null ? COLORS.previewIgnored : cell ? COLORS.previewOn : COLORS.previewOff;
-        ctx.fillRect(drawX, drawY, this.cellSize, this.cellSize);
+        ctx.fillRect(drawX, drawY, this.cellWidth, this.cellHeight);
       }
     }
     ctx.strokeStyle = COLORS.previewBorder;
     ctx.lineWidth = 2;
     ctx.strokeRect(
-      x * this.cellSize + 1,
-      y * this.cellSize + 1,
-      width * this.cellSize - 2,
-      height * this.cellSize - 2,
+      x * this.cellWidth + 1,
+      y * this.cellHeight + 1,
+      width * this.cellWidth - 2,
+      height * this.cellHeight - 2,
     );
   }
 
@@ -151,8 +154,8 @@ export class GridCanvas {
     const rect = this.canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    const col = Math.floor(x / this.cellSize);
-    const row = Math.floor(y / this.cellSize);
+    const col = Math.floor(x / this.cellWidth);
+    const row = Math.floor(y / this.cellHeight);
     const { rows, cols } = this.getState();
     if (row < 0 || col < 0 || row >= rows || col >= cols) return null;
     return { row, col };
