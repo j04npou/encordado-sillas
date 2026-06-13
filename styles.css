@@ -407,8 +407,8 @@ canvas {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: 10px;
+  padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -417,40 +417,40 @@ canvas {
 
 .focus-body {
   display: grid;
-  gap: 6px;
+  gap: 3px;
   justify-items: center;
   min-width: 0;
   text-align: center;
 }
 
 .focus-body strong {
-  font-size: 1.15rem;
+  font-size: 1rem;
 }
 
 .focus-tiles {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
+  gap: 5px;
 }
 
 .focus-tile {
   display: grid;
-  gap: 3px;
+  gap: 2px;
   justify-items: center;
-  min-width: 56px;
-  padding: 8px 10px;
+  min-width: 42px;
+  padding: 5px 8px;
   border: 2px solid var(--cell-on);
-  border-radius: 8px;
+  border-radius: 7px;
   line-height: 1;
 }
 
 .focus-tile strong {
-  font-size: 1.3rem;
+  font-size: 1.05rem;
 }
 
 .focus-tile small {
-  font-size: 0.64rem;
+  font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -483,14 +483,14 @@ canvas {
 }
 
 .icon-button {
-  width: 48px;
-  min-height: 64px;
+  width: 44px;
+  min-height: 48px;
   align-self: stretch;
   border: 1px solid var(--line);
   border-radius: 7px;
   background: #fbfcfb;
   color: var(--ink);
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   line-height: 1;
 }
 
@@ -511,7 +511,7 @@ canvas {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 18px;
+  padding: 12px 14px;
   cursor: pointer;
   list-style: none;
 }
@@ -546,19 +546,19 @@ details[open] > .instructions-head .chevron {
 .instructions-list {
   min-height: 0;
   overflow-y: auto;
-  padding: 10px;
+  padding: 8px;
 }
 
 .instruction-card {
   display: grid;
-  gap: 8px;
-  padding: 14px;
+  gap: 6px;
+  padding: 8px 10px;
   border: 1px solid transparent;
   border-radius: 8px;
 }
 
 .instruction-card + .instruction-card {
-  margin-top: 8px;
+  margin-top: 5px;
 }
 
 .instruction-card.is-active {
@@ -570,24 +570,24 @@ details[open] > .instructions-head .chevron {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 800;
 }
 
 .instruction-tiles {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 5px;
 }
 
 .instruction-tile {
   display: grid;
   place-items: center;
-  min-width: 42px;
-  height: 38px;
-  padding: 0 10px;
+  min-width: 32px;
+  height: 28px;
+  padding: 0 7px;
   border: 2px solid var(--cell-on);
-  border-radius: 7px;
+  border-radius: 6px;
   font-weight: 850;
   line-height: 1;
 }
@@ -710,15 +710,15 @@ details[open] > .instructions-head .chevron {
 
   .weave-focus {
     gap: 8px;
-    padding: 10px;
+    padding: 8px 10px;
   }
 
   .icon-button {
-    width: 42px;
+    width: 40px;
   }
 
   .focus-tile {
-    min-width: 50px;
-    padding: 7px 8px;
+    min-width: 40px;
+    padding: 5px 7px;
   }
 }

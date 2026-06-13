@@ -1,7 +1,14 @@
 // Service worker cache-first con versión: la app funciona offline y carga al
 // instante. Para publicar cambios, sube VERSION y el SW reemplazará la caché.
-const VERSION = "v1";
+const VERSION = "v2";
 const CACHE = `encordado-${VERSION}`;
+
+// En desarrollo local no interceptamos las peticiones: así los cambios se ven
+// al recargar sin tener que limpiar la caché ni subir la versión.
+const DEV =
+  self.location.hostname === "localhost" ||
+  self.location.hostname === "127.0.0.1" ||
+  self.location.hostname === "";
 
 const ASSETS = [
   "./",
@@ -48,7 +55,7 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  if (request.method !== "GET") return;
+  if (DEV || request.method !== "GET") return;
 
   // Las navegaciones (incluidos los enlaces con el diseño en la query) sirven
   // el shell cacheado; la query la lee la app, no afecta a la coincidencia.

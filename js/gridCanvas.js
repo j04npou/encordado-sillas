@@ -267,9 +267,12 @@ export class GridCanvas {
     const x = activeColumn * this.cellWidth;
     ctx.fillStyle = COLORS.highlight;
     ctx.fillRect(x, 0, this.cellWidth, this.gridHeight);
+    // Borde proporcional al ancho de celda: en columnas estrechas (sobre todo en
+    // móvil) un trazo fijo de 3px cubriría toda la celda y se vería naranja maciza.
+    const lw = clamp(this.cellWidth * 0.16, 1, 3);
     ctx.strokeStyle = COLORS.highlightStroke;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(x + 1.5, 1.5, this.cellWidth - 3, this.gridHeight - 3);
+    ctx.lineWidth = lw;
+    ctx.strokeRect(x + lw / 2, lw / 2, this.cellWidth - lw, this.gridHeight - lw);
   }
 
   drawPreview(preview) {
