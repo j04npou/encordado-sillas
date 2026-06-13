@@ -986,3 +986,10 @@ function init() {
 }
 
 init();
+
+// Registra el service worker para instalación y uso offline (PWA).
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
