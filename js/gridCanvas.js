@@ -35,8 +35,6 @@ export class GridCanvas {
     this.cellHeight = 24;
     this.gridWidth = 0;
     this.gridHeight = 0;
-    this.offsetX = 0;
-    this.offsetY = 0;
     this.zoom = 1;
     // Ancla de scroll: posición (en celdas) del área activa, para mantenerla fija
     // en pantalla cuando el lienzo crece por overflow arriba/izquierda.

@@ -13,7 +13,7 @@ export async function loadImageFromFile(file) {
   }
 }
 
-export function imageToCells(image, width, height, invert = false) {
+function imageToCells(image, width, height, invert = false) {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
