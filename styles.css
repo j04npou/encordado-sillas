@@ -57,14 +57,19 @@ button:disabled {
 .tool-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 22px;
+  gap: 10px;
+  padding: 16px 18px;
   border-right: 1px solid var(--line);
   background: var(--panel);
   overflow-y: auto;
 }
 
-.brand-block h1,
+.brand-block h1 {
+  margin: 2px 0 0;
+  font-size: 1.2rem;
+  line-height: 1.1;
+}
+
 .instructions-head h2 {
   margin: 2px 0 0;
   font-size: 1.45rem;
@@ -93,7 +98,7 @@ button:disabled {
 
 .mode-tab,
 .segment {
-  min-height: 40px;
+  min-height: 36px;
   border: 0;
   border-radius: 6px;
   background: transparent;
@@ -110,14 +115,14 @@ button:disabled {
 
 .tool-section {
   display: grid;
-  gap: 12px;
-  padding-top: 16px;
+  gap: 8px;
+  padding-top: 10px;
   border-top: 1px solid var(--line);
 }
 
 .tool-section h2 {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .field-grid {
@@ -128,7 +133,7 @@ button:disabled {
 
 label {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   color: var(--muted);
   font-size: 0.84rem;
   font-weight: 700;
@@ -137,12 +142,12 @@ label {
 input,
 select {
   width: 100%;
-  min-height: 40px;
+  min-height: 36px;
   border: 1px solid var(--line);
   border-radius: 7px;
   background: #fbfcfb;
   color: var(--ink);
-  padding: 8px 10px;
+  padding: 6px 10px;
 }
 
 input:focus,
@@ -157,9 +162,9 @@ button:focus-visible {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 8px 6px;
-  font-size: 0.85rem;
+  gap: 3px;
+  padding: 5px 6px;
+  font-size: 0.82rem;
 }
 
 .button-line {
@@ -202,9 +207,9 @@ button:focus-visible {
 .primary-button,
 .ghost-button,
 .file-button {
-  min-height: 42px;
+  min-height: 38px;
   border-radius: 7px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   font-weight: 800;
   text-align: center;
 }
@@ -580,6 +585,43 @@ details[open] > .instructions-head .chevron {
 .instruction-tile.is-under {
   background: var(--panel);
   color: var(--cell-on);
+}
+
+/* Barra lateral en pantallas de poca altura: compacta agresivamente para que las
+   secciones de diseño quepan sin scroll. Solo en el layout de escritorio (>900px),
+   donde la barra es una columna fija; por debajo se apila y hace scroll con la página. */
+@media (min-width: 901px) and (max-height: 860px) {
+  .tool-panel {
+    gap: 8px;
+  }
+
+  .tool-section {
+    gap: 6px;
+    padding-top: 8px;
+  }
+
+  .key-hint {
+    display: none;
+  }
+
+  .labeled-button {
+    flex-direction: row;
+    gap: 7px;
+    padding: 6px 8px;
+  }
+
+  .primary-button,
+  .ghost-button,
+  .file-button,
+  input,
+  select {
+    min-height: 34px;
+  }
+
+  .mode-tab,
+  .segment {
+    min-height: 32px;
+  }
 }
 
 @media (max-width: 900px) {
