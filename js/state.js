@@ -34,18 +34,21 @@ export function clearRegion(matrix, rect) {
 }
 
 export function contentBounds(matrix) {
-  let rows = 0;
-  let cols = 0;
+  let minRow = Infinity, maxRow = 0;
+  let minCol = Infinity, maxCol = 0;
   for (let row = 0; row < matrix.length; row += 1) {
     const line = matrix[row];
     for (let col = 0; col < line.length; col += 1) {
       if (line[col]) {
-        if (row + 1 > rows) rows = row + 1;
-        if (col + 1 > cols) cols = col + 1;
+        if (row < minRow) minRow = row;
+        if (row + 1 > maxRow) maxRow = row + 1;
+        if (col < minCol) minCol = col;
+        if (col + 1 > maxCol) maxCol = col + 1;
       }
     }
   }
-  return { rows, cols };
+  if (maxRow === 0) return { rows: 0, cols: 0, minRow: 0, minCol: 0 };
+  return { rows: maxRow, cols: maxCol, minRow, minCol };
 }
 
 export function clamp(value, min, max) {
@@ -68,6 +71,8 @@ export const state = {
   tallCells: false,
   widePixels: false,
   activeColumn: 0,
+  offsetRow: 0,
+  offsetCol: 0,
   importPreview: null,
   selection: null,
   floating: null,

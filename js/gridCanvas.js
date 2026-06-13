@@ -38,6 +38,10 @@ export class GridCanvas {
     this.offsetX = 0;
     this.offsetY = 0;
     this.zoom = 1;
+    // Ancla de scroll: posición (en celdas) del área activa, para mantenerla fija
+    // en pantalla cuando el lienzo crece por overflow arriba/izquierda.
+    this.anchorRow = 0;
+    this.anchorCol = 0;
     this.panMode = false;
     this.panStart = null;
     this.isPointerDown = false;
@@ -65,8 +69,12 @@ export class GridCanvas {
   }
 
   handleResize() {
-    const measured = this.applyLayout();
     const parent = this.canvas.parentElement;
+    // Posición previa del ancla en píxeles, para mantener el área activa fija en
+    // pantalla si el lienzo crece o encoge por overflow arriba/izquierda.
+    const prevAnchorX = this.anchorCol * this.cellWidth;
+    const prevAnchorY = this.anchorRow * this.cellHeight;
+    const measured = this.applyLayout();
     // Al dimensionar puede aparecer o desaparecer una barra de scroll del marco,
     // cambiando el hueco disponible: si es así, se redimensiona con la medida nueva.
     if (
@@ -75,6 +83,12 @@ export class GridCanvas {
     ) {
       this.applyLayout();
     }
+    if (parent) {
+      const dx = this.anchorCol * this.cellWidth - prevAnchorX;
+      const dy = this.anchorRow * this.cellHeight - prevAnchorY;
+      if (dx) parent.scrollLeft += dx;
+      if (dy) parent.scrollTop += dy;
+    }
     this.draw();
   }
 
@@ -82,7 +96,10 @@ export class GridCanvas {
     const parent = this.canvas.parentElement;
     const parentWidth = parent?.clientWidth ?? 800;
     const parentHeight = parent?.clientHeight ?? 600;
-    const { rows, cols, tallCells, activeRows, activeCols } = this.getState();
+    const { rows, cols, tallCells, activeRows, activeCols, activeOffsetRow, activeOffsetCol } =
+      this.getState();
+    this.anchorRow = activeOffsetRow ?? 0;
+    this.anchorCol = activeOffsetCol ?? 0;
     // El tamaño de celda se ajusta al área activa; la región puede ser mayor
     // (overflow) y entonces el lienzo desborda el marco con scroll.
     const fitRows = activeRows ?? rows;
@@ -149,6 +166,8 @@ export class GridCanvas {
       selection,
       activeRows,
       activeCols,
+      activeOffsetRow,
+      activeOffsetCol,
     } = this.getState();
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.gridWidth, this.gridHeight);
@@ -168,8 +187,10 @@ export class GridCanvas {
 
     this.drawGrid(rows, cols);
 
-    if (activeRows != null && (rows > activeRows || cols > activeCols)) {
-      this.drawOverflowZone(rows, cols, activeRows, activeCols);
+    const offR = activeOffsetRow ?? 0;
+    const offC = activeOffsetCol ?? 0;
+    if (activeRows != null && (rows > activeRows || cols > activeCols || offR > 0 || offC > 0)) {
+      this.drawOverflowZone(rows, cols, activeRows, activeCols, offR, offC);
     }
 
     if (importPreview) {
@@ -185,31 +206,24 @@ export class GridCanvas {
     }
   }
 
-  drawOverflowZone(rows, cols, activeRows, activeCols) {
+  drawOverflowZone(rows, cols, activeRows, activeCols, activeOffsetRow = 0, activeOffsetCol = 0) {
     const ctx = this.ctx;
-    const edgeX = activeCols * this.cellWidth;
-    const edgeY = activeRows * this.cellHeight;
+    const x0 = activeOffsetCol * this.cellWidth;
+    const y0 = activeOffsetRow * this.cellHeight;
+    const x1 = x0 + activeCols * this.cellWidth;
+    const y1 = y0 + activeRows * this.cellHeight;
+    const W = this.gridWidth;
+    const H = this.gridHeight;
+
     ctx.fillStyle = COLORS.overflowVeil;
-    if (cols > activeCols) {
-      ctx.fillRect(edgeX, 0, this.gridWidth - edgeX, this.gridHeight);
-    }
-    if (rows > activeRows) {
-      ctx.fillRect(0, edgeY, Math.min(edgeX, this.gridWidth), this.gridHeight - edgeY);
-    }
+    if (y0 > 0) ctx.fillRect(0, 0, W, y0);
+    if (y1 < H) ctx.fillRect(0, y1, W, H - y1);
+    if (x0 > 0) ctx.fillRect(0, y0, x0, y1 - y0);
+    if (x1 < W) ctx.fillRect(x1, y0, W - x1, y1 - y0);
+
     ctx.strokeStyle = COLORS.activeEdge;
     ctx.lineWidth = 2;
-    if (cols > activeCols) {
-      ctx.beginPath();
-      ctx.moveTo(edgeX, 0);
-      ctx.lineTo(edgeX, this.gridHeight);
-      ctx.stroke();
-    }
-    if (rows > activeRows) {
-      ctx.beginPath();
-      ctx.moveTo(0, edgeY);
-      ctx.lineTo(this.gridWidth, edgeY);
-      ctx.stroke();
-    }
+    ctx.strokeRect(x0 + 1, y0 + 1, x1 - x0 - 2, y1 - y0 - 2);
   }
 
   drawSelection(selection) {

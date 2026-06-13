@@ -82,29 +82,83 @@ function matrixCols() {
 }
 
 // Mantiene la matriz tan grande como el área activa o el contenido real,
-// recortando el overflow que haya quedado vacío.
+// recortando el overflow vacío por todos los lados (incluido arriba/izquierda).
 function normalizeMatrix() {
   const bounds = contentBounds(state.matrix);
-  const rows = Math.max(state.rows, bounds.rows);
-  const cols = Math.max(state.cols, bounds.cols);
+
+  if (bounds.rows > 0) {
+    // Recorta filas/columnas vacías iniciales que queden antes del contenido Y del área activa.
+    const trimRow = Math.min(bounds.minRow, state.offsetRow);
+    const trimCol = Math.min(bounds.minCol, state.offsetCol);
+    if (trimRow > 0 || trimCol > 0) {
+      const newRows = matrixRows() - trimRow;
+      const newCols = matrixCols() - trimCol;
+      const next = createMatrix(newRows, newCols);
+      for (let r = trimRow; r < matrixRows(); r += 1) {
+        for (let c = trimCol; c < matrixCols(); c += 1) {
+          next[r - trimRow][c - trimCol] = state.matrix[r][c];
+        }
+      }
+      state.matrix = next;
+      state.offsetRow -= trimRow;
+      state.offsetCol -= trimCol;
+      if (state.selection) {
+        state.selection.x -= trimCol;
+        state.selection.y -= trimRow;
+      }
+    }
+  } else {
+    // Matriz vacía: resetea el offset para que el área activa vuelva a (0,0).
+    state.offsetRow = 0;
+    state.offsetCol = 0;
+  }
+
+  // Asegura que la matriz cubre el área activa y el contenido actual.
+  const nb = contentBounds(state.matrix);
+  const rows = Math.max(state.offsetRow + state.rows, nb.rows);
+  const cols = Math.max(state.offsetCol + state.cols, nb.cols);
   if (rows !== matrixRows() || cols !== matrixCols()) {
     state.matrix = resizeMatrix(state.matrix, rows, cols);
   }
-  // La selección no puede apuntar fuera de la matriz tras un recorte.
+
+  // La selección no puede apuntar fuera de la matriz tras el recorte.
   if (state.selection) {
     const sel = state.selection;
-    if (sel.x >= cols || sel.y >= rows) {
+    if (sel.x < 0 || sel.y < 0 || sel.x >= matrixCols() || sel.y >= matrixRows()) {
       state.selection = null;
     } else {
-      sel.width = Math.min(sel.width, cols - sel.x);
-      sel.height = Math.min(sel.height, rows - sel.y);
+      sel.width = Math.min(sel.width, matrixCols() - sel.x);
+      sel.height = Math.min(sel.height, matrixRows() - sel.y);
     }
   }
 }
 
-function growMatrixToFit(rect) {
-  const rows = Math.max(matrixRows(), rect.y + rect.height);
-  const cols = Math.max(matrixCols(), rect.x + rect.width);
+function growMatrixToFit(layer) {
+  // Overflow hacia la izquierda/arriba: extiende la matriz y actualiza el offset.
+  const dRow = layer.y < 0 ? -layer.y : 0;
+  const dCol = layer.x < 0 ? -layer.x : 0;
+  if (dRow > 0 || dCol > 0) {
+    const newRows = matrixRows() + dRow;
+    const newCols = matrixCols() + dCol;
+    const next = createMatrix(newRows, newCols);
+    for (let r = 0; r < matrixRows(); r += 1) {
+      for (let c = 0; c < matrixCols(); c += 1) {
+        next[r + dRow][c + dCol] = state.matrix[r][c];
+      }
+    }
+    state.matrix = next;
+    state.offsetRow += dRow;
+    state.offsetCol += dCol;
+    layer.y += dRow;
+    layer.x += dCol;
+    if (state.selection) {
+      state.selection.y += dRow;
+      state.selection.x += dCol;
+    }
+  }
+  // Overflow hacia la derecha/abajo.
+  const rows = Math.max(matrixRows(), layer.y + layer.height);
+  const cols = Math.max(matrixCols(), layer.x + layer.width);
   if (rows !== matrixRows() || cols !== matrixCols()) {
     state.matrix = resizeMatrix(state.matrix, rows, cols);
   }
@@ -134,43 +188,78 @@ function widenLayer(layer) {
   return { ...widenRect(layer), cells: doubleColumns(layer.cells) };
 }
 
-// Región que muestra el lienzo de diseño: área activa + overflow + capas flotantes.
-function designRegion() {
-  let rows = Math.max(state.rows, matrixRows());
-  let cols = Math.max(state.cols, matrixCols());
+// Disposición del lienzo de diseño, en coordenadas de matriz.
+// minY/minX < 0 cuando una capa flotante asoma por encima/izquierda del lienzo:
+// padTop/padLeft son el margen de render que se añade para poder mostrarla y
+// arrastrarla hacia ese lado (igual que la región crece a la derecha/abajo).
+function designLayout() {
+  let minY = 0;
+  let minX = 0;
+  let maxY = Math.max(state.offsetRow + state.rows, matrixRows());
+  let maxX = Math.max(state.offsetCol + state.cols, matrixCols());
   for (const layer of [state.floating, state.importPreview]) {
     if (layer) {
-      rows = Math.max(rows, layer.y + layer.height);
-      cols = Math.max(cols, layer.x + layer.width);
+      minY = Math.min(minY, layer.y);
+      minX = Math.min(minX, layer.x);
+      maxY = Math.max(maxY, layer.y + layer.height);
+      maxX = Math.max(maxX, layer.x + layer.width);
     }
   }
-  return { rows, cols };
+  return { padTop: -minY, padLeft: -minX, rows: maxY - minY, cols: maxX - minX };
+}
+
+// Copia la matriz dentro de una rejilla mayor desplazada (padTop, padLeft).
+function padDesignMatrix(matrix, layout) {
+  const { padTop, padLeft, rows, cols } = layout;
+  if (padTop === 0 && padLeft === 0 && rows === matrixRows() && cols === matrixCols()) {
+    return matrix;
+  }
+  const out = createMatrix(rows, cols);
+  for (let r = 0; r < matrix.length; r += 1) {
+    const tr = r + padTop;
+    if (tr < 0 || tr >= rows) continue;
+    const src = matrix[r];
+    const dst = out[tr];
+    for (let c = 0; c < src.length; c += 1) {
+      const tc = c + padLeft;
+      if (tc >= 0 && tc < cols) dst[tc] = src[c];
+    }
+  }
+  return out;
 }
 
 // Estado que ve el lienzo de diseño: el diseño original nunca se modifica.
 function designViewState() {
-  const region = designRegion();
-  const matrix =
-    region.rows !== matrixRows() || region.cols !== matrixCols()
-      ? resizeMatrix(state.matrix, region.rows, region.cols)
-      : state.matrix;
+  const layout = designLayout();
+  const matrix = padDesignMatrix(state.matrix, layout);
+  const shift = (layer) =>
+    layer ? { ...layer, x: layer.x + layout.padLeft, y: layer.y + layout.padTop } : layer;
   const base = {
     ...state,
-    rows: region.rows,
-    cols: region.cols,
+    rows: layout.rows,
+    cols: layout.cols,
     activeRows: state.rows,
     activeCols: state.cols,
+    // Posición del área activa dentro del lienzo (offset real + margen de render por
+    // overflow arriba/izquierda). El canvas la usa como ancla para compensar el scroll
+    // y no arrastrar el contenido bajo el cursor cuando el lienzo crece por ese lado.
+    activeOffsetRow: state.offsetRow + layout.padTop,
+    activeOffsetCol: state.offsetCol + layout.padLeft,
     matrix,
+    selection: shift(state.selection),
+    floating: shift(state.floating),
+    importPreview: shift(state.importPreview),
   };
   if (!isWideView()) return base;
   return {
     ...base,
     cols: base.cols * 2,
     activeCols: state.cols * 2,
+    activeOffsetCol: base.activeOffsetCol * 2,
     matrix: doubleColumns(matrix),
-    selection: widenRect(state.selection),
-    floating: widenLayer(state.floating),
-    importPreview: widenLayer(state.importPreview),
+    selection: widenRect(base.selection),
+    floating: widenLayer(base.floating),
+    importPreview: widenLayer(base.importPreview),
   };
 }
 
@@ -188,14 +277,31 @@ function weaveViewState() {
   };
 }
 
+// Convierte una celda del lienzo (con pad de render y duplicado wide) a coordenadas de matriz.
 function toModelCell(cell) {
-  return isWideView() ? { row: cell.row, col: Math.floor(cell.col / 2) } : cell;
+  const { padTop, padLeft } = designLayout();
+  const col = isWideView() ? Math.floor(cell.col / 2) : cell.col;
+  return { row: cell.row - padTop, col: col - padLeft };
 }
 
-// Matriz que se teje y se exporta: área activa recortada (el overflow se ignora).
+// Área activa sin transformaciones visuales: datos reales que se tejen y se exportan.
+function activeMatrix() {
+  const result = createMatrix(state.rows, state.cols);
+  for (let r = 0; r < state.rows; r += 1) {
+    const mr = r + state.offsetRow;
+    if (mr >= matrixRows()) break;
+    for (let c = 0; c < state.cols; c += 1) {
+      const mc = c + state.offsetCol;
+      if (mc < matrixCols()) result[r][c] = state.matrix[mr][mc];
+    }
+  }
+  return result;
+}
+
+// Matriz que ve el lienzo de tejer: área activa con duplicado visual de columnas si aplica.
 function displayMatrix() {
-  const cropped = resizeMatrix(state.matrix, state.rows, state.cols);
-  return isWideView() ? doubleColumns(cropped) : cropped;
+  const base = activeMatrix();
+  return isWideView() ? doubleColumns(base) : base;
 }
 
 // --- Historial ---
@@ -205,7 +311,13 @@ const undoStack = [];
 const redoStack = [];
 
 function snapshot() {
-  return { matrix: cloneMatrix(state.matrix), rows: state.rows, cols: state.cols };
+  return {
+    matrix: cloneMatrix(state.matrix),
+    rows: state.rows,
+    cols: state.cols,
+    offsetRow: state.offsetRow,
+    offsetCol: state.offsetCol,
+  };
 }
 
 function pushSnapshot(snap) {
@@ -222,6 +334,8 @@ function applySnapshot(snap) {
   state.matrix = cloneMatrix(snap.matrix);
   state.rows = snap.rows;
   state.cols = snap.cols;
+  state.offsetRow = snap.offsetRow ?? 0;
+  state.offsetCol = snap.offsetCol ?? 0;
   elements.rowsInput.value = snap.rows;
   elements.colsInput.value = snap.cols;
   state.selection = null;
@@ -402,9 +516,9 @@ function handleCellDown(cell) {
 }
 
 function moveLayer(layer, cell) {
-  // Las capas pueden salir del área activa: quedarán como overflow al fijarse.
-  layer.x = clamp(cell.col - dragAction.dx, 0, MAX_SIZE - layer.width);
-  layer.y = clamp(cell.row - dragAction.dy, 0, MAX_SIZE - layer.height);
+  // Las capas pueden salir del área activa en cualquier dirección: quedarán como overflow al fijarse.
+  layer.x = clamp(cell.col - dragAction.dx, 1 - layer.width, MAX_SIZE - layer.width);
+  layer.y = clamp(cell.row - dragAction.dy, 1 - layer.height, MAX_SIZE - layer.height);
 }
 
 function handleCellDrag(cell) {
@@ -764,6 +878,8 @@ function bindEvents() {
     cancelFloating();
     pushHistory();
     state.matrix = createMatrix(state.rows, state.cols);
+    state.offsetRow = 0;
+    state.offsetCol = 0;
     state.selection = null;
     redraw();
   });
@@ -779,9 +895,7 @@ function bindEvents() {
   elements.panBtn.addEventListener("click", togglePan);
   elements.imageInput.addEventListener("change", handleImageImport);
   elements.invertImageInput.addEventListener("change", refreshImportPreview);
-  elements.exportBtn.addEventListener("click", () =>
-    exportMatrixAsPng(displayMatrix(), state.tallCells),
-  );
+  elements.exportBtn.addEventListener("click", () => exportMatrixAsPng(activeMatrix()));
   elements.designModeBtn.addEventListener("click", () => setMode("design"));
   elements.weaveModeBtn.addEventListener("click", () => setMode("weave"));
   elements.directionInput.addEventListener("change", (event) => {
