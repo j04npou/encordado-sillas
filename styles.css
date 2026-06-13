@@ -64,6 +64,21 @@ button:disabled {
   overflow-y: auto;
 }
 
+.brand-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  width: 28px;
+  height: 44px;
+  flex: none;
+  background: var(--active);
+  -webkit-mask: var(--icon) center / contain no-repeat;
+  mask: var(--icon) center / contain no-repeat;
+}
+
 .brand-block h1 {
   margin: 2px 0 0;
   font-size: 1.2rem;
