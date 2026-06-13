@@ -33,6 +33,21 @@ export function clearRegion(matrix, rect) {
   }
 }
 
+export function contentBounds(matrix) {
+  let rows = 0;
+  let cols = 0;
+  for (let row = 0; row < matrix.length; row += 1) {
+    const line = matrix[row];
+    for (let col = 0; col < line.length; col += 1) {
+      if (line[col]) {
+        if (row + 1 > rows) rows = row + 1;
+        if (col + 1 > cols) cols = col + 1;
+      }
+    }
+  }
+  return { rows, cols };
+}
+
 export function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }

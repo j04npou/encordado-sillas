@@ -17,6 +17,8 @@ const COLORS = {
   highlightStroke: "#c44e35",
   selection: "rgba(30, 124, 107, 0.16)",
   selectionStroke: "#1e7c6b",
+  overflowVeil: "rgba(34, 32, 29, 0.12)",
+  activeEdge: "rgba(34, 32, 29, 0.55)",
 };
 
 export class GridCanvas {
@@ -80,16 +82,20 @@ export class GridCanvas {
     const parent = this.canvas.parentElement;
     const parentWidth = parent?.clientWidth ?? 800;
     const parentHeight = parent?.clientHeight ?? 600;
-    const { rows, cols, tallCells } = this.getState();
+    const { rows, cols, tallCells, activeRows, activeCols } = this.getState();
+    // El tamaño de celda se ajusta al área activa; la región puede ser mayor
+    // (overflow) y entonces el lienzo desborda el marco con scroll.
+    const fitRows = activeRows ?? rows;
+    const fitCols = activeCols ?? cols;
     const aspect = tallCells ? 2 : 1;
     if (this.fitHeight) {
       // Llena la altura exacta del marco; las celdas pueden ser fraccionarias,
       // así no se acumula el error de redondeo (visible sobre todo con alto ×2).
-      this.cellHeight = Math.max(8, parentHeight / rows);
+      this.cellHeight = Math.max(8, parentHeight / fitRows);
       this.cellWidth = this.cellHeight / aspect;
     } else {
-      const maxCellByWidth = Math.floor((parentWidth - 32) / cols);
-      const maxCellByHeight = Math.floor((parentHeight - 32) / (rows * aspect));
+      const maxCellByWidth = Math.floor((parentWidth - 32) / fitCols);
+      const maxCellByHeight = Math.floor((parentHeight - 32) / (fitRows * aspect));
       const fitted = clamp(Math.min(maxCellByWidth, maxCellByHeight), 6, 34);
       this.cellWidth = Math.round(fitted * this.zoom);
       this.cellHeight = this.cellWidth * aspect;
@@ -132,8 +138,18 @@ export class GridCanvas {
   }
 
   draw() {
-    const { rows, cols, matrix, importPreview, activeColumn, mode, floating, selection } =
-      this.getState();
+    const {
+      rows,
+      cols,
+      matrix,
+      importPreview,
+      activeColumn,
+      mode,
+      floating,
+      selection,
+      activeRows,
+      activeCols,
+    } = this.getState();
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.gridWidth, this.gridHeight);
     ctx.fillStyle = COLORS.background;
@@ -152,6 +168,10 @@ export class GridCanvas {
 
     this.drawGrid(rows, cols);
 
+    if (activeRows != null && (rows > activeRows || cols > activeCols)) {
+      this.drawOverflowZone(rows, cols, activeRows, activeCols);
+    }
+
     if (importPreview) {
       this.drawPreview(importPreview);
     }
@@ -162,6 +182,33 @@ export class GridCanvas {
 
     if (selection && !this.readonly) {
       this.drawSelection(selection);
+    }
+  }
+
+  drawOverflowZone(rows, cols, activeRows, activeCols) {
+    const ctx = this.ctx;
+    const edgeX = activeCols * this.cellWidth;
+    const edgeY = activeRows * this.cellHeight;
+    ctx.fillStyle = COLORS.overflowVeil;
+    if (cols > activeCols) {
+      ctx.fillRect(edgeX, 0, this.gridWidth - edgeX, this.gridHeight);
+    }
+    if (rows > activeRows) {
+      ctx.fillRect(0, edgeY, Math.min(edgeX, this.gridWidth), this.gridHeight - edgeY);
+    }
+    ctx.strokeStyle = COLORS.activeEdge;
+    ctx.lineWidth = 2;
+    if (cols > activeCols) {
+      ctx.beginPath();
+      ctx.moveTo(edgeX, 0);
+      ctx.lineTo(edgeX, this.gridHeight);
+      ctx.stroke();
+    }
+    if (rows > activeRows) {
+      ctx.beginPath();
+      ctx.moveTo(0, edgeY);
+      ctx.lineTo(this.gridWidth, edgeY);
+      ctx.stroke();
     }
   }
 

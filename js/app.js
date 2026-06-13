@@ -5,6 +5,7 @@ import {
   clamp,
   clearRegion,
   cloneMatrix,
+  contentBounds,
   createMatrix,
   extractRegion,
   MAX_SIZE,
@@ -68,6 +69,47 @@ function updateFocusSpacing() {
   }
 }
 
+// --- Matriz con overflow ---
+// La matriz puede ser mayor que el área activa (rows×cols): los píxeles que
+// quedan fuera al encoger el lienzo se conservan como overflow visible.
+
+function matrixRows() {
+  return state.matrix.length;
+}
+
+function matrixCols() {
+  return state.matrix[0]?.length ?? 0;
+}
+
+// Mantiene la matriz tan grande como el área activa o el contenido real,
+// recortando el overflow que haya quedado vacío.
+function normalizeMatrix() {
+  const bounds = contentBounds(state.matrix);
+  const rows = Math.max(state.rows, bounds.rows);
+  const cols = Math.max(state.cols, bounds.cols);
+  if (rows !== matrixRows() || cols !== matrixCols()) {
+    state.matrix = resizeMatrix(state.matrix, rows, cols);
+  }
+  // La selección no puede apuntar fuera de la matriz tras un recorte.
+  if (state.selection) {
+    const sel = state.selection;
+    if (sel.x >= cols || sel.y >= rows) {
+      state.selection = null;
+    } else {
+      sel.width = Math.min(sel.width, cols - sel.x);
+      sel.height = Math.min(sel.height, rows - sel.y);
+    }
+  }
+}
+
+function growMatrixToFit(rect) {
+  const rows = Math.max(matrixRows(), rect.y + rect.height);
+  const cols = Math.max(matrixCols(), rect.x + rect.width);
+  if (rows !== matrixRows() || cols !== matrixCols()) {
+    state.matrix = resizeMatrix(state.matrix, rows, cols);
+  }
+}
+
 // --- Vista con píxel cuadrado (duplica columnas, solo presentación) ---
 
 function isWideView() {
@@ -82,25 +124,67 @@ function doubleColumns(matrix) {
   return matrix.map((row) => row.flatMap((value) => [value, value]));
 }
 
-function widenLayer(layer) {
-  if (!layer) return layer;
-  return { ...layer, x: layer.x * 2, width: layer.width * 2, cells: doubleColumns(layer.cells) };
+function widenRect(rect) {
+  if (!rect) return rect;
+  return { ...rect, x: rect.x * 2, width: rect.width * 2 };
 }
 
-// Estado que ven los lienzos: el diseño original nunca se modifica.
-function viewState() {
-  if (!isWideView()) return state;
+function widenLayer(layer) {
+  if (!layer) return layer;
+  return { ...widenRect(layer), cells: doubleColumns(layer.cells) };
+}
+
+// Región que muestra el lienzo de diseño: área activa + overflow + capas flotantes.
+function designRegion() {
+  let rows = Math.max(state.rows, matrixRows());
+  let cols = Math.max(state.cols, matrixCols());
+  for (const layer of [state.floating, state.importPreview]) {
+    if (layer) {
+      rows = Math.max(rows, layer.y + layer.height);
+      cols = Math.max(cols, layer.x + layer.width);
+    }
+  }
+  return { rows, cols };
+}
+
+// Estado que ve el lienzo de diseño: el diseño original nunca se modifica.
+function designViewState() {
+  const region = designRegion();
+  const matrix =
+    region.rows !== matrixRows() || region.cols !== matrixCols()
+      ? resizeMatrix(state.matrix, region.rows, region.cols)
+      : state.matrix;
+  const base = {
+    ...state,
+    rows: region.rows,
+    cols: region.cols,
+    activeRows: state.rows,
+    activeCols: state.cols,
+    matrix,
+  };
+  if (!isWideView()) return base;
+  return {
+    ...base,
+    cols: base.cols * 2,
+    activeCols: state.cols * 2,
+    matrix: doubleColumns(matrix),
+    selection: widenRect(state.selection),
+    floating: widenLayer(state.floating),
+    importPreview: widenLayer(state.importPreview),
+  };
+}
+
+// Estado que ve el lienzo de tejer: solo el área activa, sin overflow ni capas.
+function weaveViewState() {
   return {
     ...state,
     cols: viewCols(),
-    matrix: doubleColumns(state.matrix),
-    selection: state.selection && {
-      ...state.selection,
-      x: state.selection.x * 2,
-      width: state.selection.width * 2,
-    },
-    floating: widenLayer(state.floating),
-    importPreview: widenLayer(state.importPreview),
+    activeRows: state.rows,
+    activeCols: viewCols(),
+    matrix: displayMatrix(),
+    selection: null,
+    floating: null,
+    importPreview: null,
   };
 }
 
@@ -108,8 +192,10 @@ function toModelCell(cell) {
   return isWideView() ? { row: cell.row, col: Math.floor(cell.col / 2) } : cell;
 }
 
+// Matriz que se teje y se exporta: área activa recortada (el overflow se ignora).
 function displayMatrix() {
-  return isWideView() ? doubleColumns(state.matrix) : state.matrix;
+  const cropped = resizeMatrix(state.matrix, state.rows, state.cols);
+  return isWideView() ? doubleColumns(cropped) : cropped;
 }
 
 // --- Historial ---
@@ -169,6 +255,11 @@ function rectOf(layer) {
   return { x: layer.x, y: layer.y, width: layer.width, height: layer.height };
 }
 
+// Solo los píxeles pintados viajan con la capa; los vacíos (null) no tapan el fondo.
+function transparentCells(cells) {
+  return cells.map((row) => row.map((value) => (value ? true : null)));
+}
+
 function cellInRect(cell, rect) {
   return (
     cell.col >= rect.x &&
@@ -182,9 +273,12 @@ function commitFloating() {
   if (!state.floating) return;
   // El historial de un bloque movido ya se guardó al levantarlo de la cuadrícula.
   if (!state.floating.moved) pushHistory();
+  growMatrixToFit(state.floating);
   state.matrix = stampPreview(state.matrix, state.floating);
   state.selection = rectOf(state.floating);
   state.floating = null;
+  // Si el bloque venía del overflow, recorta la región que haya quedado vacía.
+  normalizeMatrix();
   redraw();
 }
 
@@ -215,6 +309,7 @@ function cutSelection() {
   copySelection();
   pushHistory();
   clearRegion(state.matrix, state.selection);
+  normalizeMatrix();
   redraw();
 }
 
@@ -222,26 +317,25 @@ function deleteSelection() {
   if (!state.selection) return;
   pushHistory();
   clearRegion(state.matrix, state.selection);
+  normalizeMatrix();
   redraw();
 }
 
 function pasteClipboard() {
   if (!state.clipboard || state.mode !== "design") return;
   commitFloating();
-  const width = Math.min(state.clipboard.width, state.cols);
-  const height = Math.min(state.clipboard.height, state.rows);
-  const cells = state.clipboard.cells.slice(0, height).map((row) => row.slice(0, width));
+  const { width, height, cells } = state.clipboard;
   const x = clamp(
     state.selection?.x ?? Math.floor((state.cols - width) / 2),
     0,
-    state.cols - width,
+    Math.max(0, state.cols - width),
   );
   const y = clamp(
     state.selection?.y ?? Math.floor((state.rows - height) / 2),
     0,
-    state.rows - height,
+    Math.max(0, state.rows - height),
   );
-  state.floating = { x, y, width, height, cells };
+  state.floating = { x, y, width, height, cells: transparentCells(cells) };
   state.selection = null;
   redraw();
 }
@@ -293,7 +387,7 @@ function handleCellDown(cell) {
       state.floating = {
         ...rectOf(state.selection),
         moved: true,
-        cells: extractRegion(state.matrix, state.selection),
+        cells: transparentCells(extractRegion(state.matrix, state.selection)),
       };
       clearRegion(state.matrix, state.selection);
       dragAction = {
@@ -308,8 +402,9 @@ function handleCellDown(cell) {
 }
 
 function moveLayer(layer, cell) {
-  layer.x = clamp(cell.col - dragAction.dx, 0, state.cols - layer.width);
-  layer.y = clamp(cell.row - dragAction.dy, 0, state.rows - layer.height);
+  // Las capas pueden salir del área activa: quedarán como overflow al fijarse.
+  layer.x = clamp(cell.col - dragAction.dx, 0, MAX_SIZE - layer.width);
+  layer.y = clamp(cell.row - dragAction.dy, 0, MAX_SIZE - layer.height);
 }
 
 function handleCellDrag(cell) {
@@ -334,16 +429,21 @@ function handleCellDrag(cell) {
 }
 
 function handleCellUp() {
+  if (dragAction?.type === "paint") {
+    // Si la goma vació el overflow, la región sobrante se recorta al soltar.
+    normalizeMatrix();
+    redraw();
+  }
   dragAction = null;
 }
 
-const designCanvas = new GridCanvas(elements.patternCanvas, viewState, {
+const designCanvas = new GridCanvas(elements.patternCanvas, designViewState, {
   onCellDown: handleCellDown,
   onCellDrag: handleCellDrag,
   onCellUp: handleCellUp,
 });
 
-const weaveCanvas = new GridCanvas(elements.weaveCanvas, viewState, {
+const weaveCanvas = new GridCanvas(elements.weaveCanvas, weaveViewState, {
   readonly: true,
   fitHeight: true,
 });
@@ -435,9 +535,10 @@ function updateSize() {
   if (rows !== state.rows || cols !== state.cols) {
     commitFloating();
     pushHistory();
-    state.matrix = resizeMatrix(state.matrix, rows, cols);
     state.rows = rows;
     state.cols = cols;
+    // No recorta: los píxeles que queden fuera se conservan como overflow.
+    normalizeMatrix();
     state.selection = null;
   }
   state.activeColumn = Math.min(state.activeColumn, cols - 1);
@@ -485,7 +586,7 @@ async function handleImageImport(event) {
   if (width > state.cols || height > state.rows) {
     state.cols = Math.max(state.cols, width);
     state.rows = Math.max(state.rows, height);
-    state.matrix = resizeMatrix(state.matrix, state.rows, state.cols);
+    normalizeMatrix();
     elements.rowsInput.value = state.rows;
     elements.colsInput.value = state.cols;
     state.selection = null;
@@ -499,6 +600,7 @@ function stampImport() {
   // Un solo paso de deshacer que incluye el crecimiento del lienzo y el fijado.
   pushSnapshot(preImportSnapshot ?? snapshot());
   preImportSnapshot = null;
+  growMatrixToFit(state.importPreview);
   state.matrix = stampPreview(state.matrix, state.importPreview);
   state.importPreview = null;
   importedImage = null;
