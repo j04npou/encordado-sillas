@@ -37,6 +37,8 @@ const elements = {
   importControls: document.querySelector("#importControls"),
   importError: document.querySelector("#importError"),
   invertImageInput: document.querySelector("#invertImageInput"),
+  stampImportBtn: document.querySelector("#stampImportBtn"),
+  cancelImportBtn: document.querySelector("#cancelImportBtn"),
   exportBtn: document.querySelector("#exportBtn"),
   designModeBtn: document.querySelector("#designModeBtn"),
   weaveModeBtn: document.querySelector("#weaveModeBtn"),
@@ -895,6 +897,8 @@ function bindEvents() {
   elements.panBtn.addEventListener("click", togglePan);
   elements.imageInput.addEventListener("change", handleImageImport);
   elements.invertImageInput.addEventListener("change", refreshImportPreview);
+  elements.stampImportBtn.addEventListener("click", stampImport);
+  elements.cancelImportBtn.addEventListener("click", cancelImport);
   elements.exportBtn.addEventListener("click", () => exportMatrixAsPng(activeMatrix()));
   elements.designModeBtn.addEventListener("click", () => setMode("design"));
   elements.weaveModeBtn.addEventListener("click", () => setMode("weave"));

@@ -259,6 +259,12 @@ button:focus-visible {
   font-size: 0.78rem;
 }
 
+.import-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
 .button-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
