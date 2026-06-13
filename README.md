@@ -26,7 +26,10 @@ Aplicación web de una sola página para crear patrones de cordado, tejido o ces
 ├── styles.css
 ├── manifest.json        # Web App Manifest (PWA)
 ├── sw.js                # Service worker (caché offline)
-├── assets/              # Iconos SVG y PNG (incluido el icono de la app)
+├── assets/
+│   ├── icons/           # Iconos de los botones de la interfaz
+│   ├── brand/           # Icono de la app, favicon, iconos PWA y la imagen Open Graph
+│   └── sources/         # SVG fuente para regenerar los PNG (no se sirven)
 └── js
     ├── app.js
     ├── exporter.js

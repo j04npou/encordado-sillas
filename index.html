@@ -5,16 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Encordado de sillas</title>
     <meta name="theme-color" content="#1e7c6b" />
-    <link rel="icon" href="assets/chair-favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="assets/icon-192.png" />
+    <link rel="icon" href="assets/brand/chair-favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="assets/brand/icon-192.png" />
     <link rel="manifest" href="manifest.json" />
+
+    <meta
+      name="description"
+      content="Diseña patrones de tejido para encordar sillas y sigue las instrucciones columna a columna."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_ES" />
+    <meta property="og:title" content="Encordado de sillas" />
+    <meta
+      property="og:description"
+      content="Diseña patrones de tejido para encordar sillas y sigue las instrucciones columna a columna."
+    />
+    <meta property="og:url" content="https://j04npou.github.io/encordado-sillas/" />
+    <meta property="og:image" content="https://j04npou.github.io/encordado-sillas/assets/brand/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Encordado de sillas — patrones de tejido" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Encordado de sillas" />
+    <meta name="twitter:description" content="Diseña patrones de tejido para encordar sillas." />
+    <meta name="twitter:image" content="https://j04npou.github.io/encordado-sillas/assets/brand/og-image.png" />
+
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="app-shell">
       <aside class="tool-panel" aria-label="Herramientas de patronaje">
         <div class="brand-block">
-          <span class="brand-icon" style="--icon: url('assets/chair.svg')" aria-hidden="true"></span>
+          <span class="brand-icon" style="--icon: url('assets/brand/chair.svg')" aria-hidden="true"></span>
           <div class="brand-text">
             <p class="eyebrow">Patrones de tejido</p>
             <h1>Encordado de sillas</h1>
@@ -57,28 +80,28 @@
           <div class="segmented" aria-label="Herramienta activa">
             <button class="segment labeled-button is-active" data-tool="paint" type="button">
               <span class="button-line">
-                <span class="button-icon" style="--icon: url('assets/pencil.svg')" aria-hidden="true"></span>
+                <span class="button-icon" style="--icon: url('assets/icons/pencil.svg')" aria-hidden="true"></span>
                 <span>Pintar</span>
               </span>
               <kbd class="key-hint">P</kbd>
             </button>
             <button class="segment labeled-button" data-tool="erase" type="button">
               <span class="button-line">
-                <span class="button-icon" style="--icon: url('assets/eraser.svg')" aria-hidden="true"></span>
+                <span class="button-icon" style="--icon: url('assets/icons/eraser.svg')" aria-hidden="true"></span>
                 <span>Borrar</span>
               </span>
               <kbd class="key-hint">B</kbd>
             </button>
             <button class="segment labeled-button" data-tool="select" type="button">
               <span class="button-line">
-                <span class="button-icon" style="--icon: url('assets/square-dashed.svg')" aria-hidden="true"></span>
+                <span class="button-icon" style="--icon: url('assets/icons/square-dashed.svg')" aria-hidden="true"></span>
                 <span>Seleccionar</span>
               </span>
               <kbd class="key-hint">S</kbd>
             </button>
             <button class="segment labeled-button" data-tool="move" type="button">
               <span class="button-line">
-                <span class="button-icon" style="--icon: url('assets/arrows-alt.svg')" aria-hidden="true"></span>
+                <span class="button-icon" style="--icon: url('assets/icons/arrows-alt.svg')" aria-hidden="true"></span>
                 <span>Mover</span>
               </span>
               <kbd class="key-hint">M</kbd>
@@ -86,7 +109,7 @@
           </div>
           <button class="ghost-button labeled-button" id="clearBtn" type="button">
             <span class="button-line">
-              <span class="button-icon" style="--icon: url('assets/broom-wide.svg')" aria-hidden="true"></span>
+              <span class="button-icon" style="--icon: url('assets/icons/broom-wide.svg')" aria-hidden="true"></span>
               <span>Limpiar cuadrícula</span>
             </span>
           </button>
@@ -97,14 +120,14 @@
           <div class="button-row">
             <button class="ghost-button labeled-button" id="undoBtn" type="button" title="Deshacer">
               <span class="button-line">
-                <span class="button-icon" style="--icon: url('assets/undo.svg')" aria-hidden="true"></span>
+                <span class="button-icon" style="--icon: url('assets/icons/undo.svg')" aria-hidden="true"></span>
                 <span>Deshacer</span>
               </span>
               <kbd class="key-hint">Ctrl+Z</kbd>
             </button>
             <button class="ghost-button labeled-button" id="redoBtn" type="button" title="Rehacer">
               <span class="button-line">
-                <span class="button-icon" style="--icon: url('assets/redo.svg')" aria-hidden="true"></span>
+                <span class="button-icon" style="--icon: url('assets/icons/redo.svg')" aria-hidden="true"></span>
                 <span>Rehacer</span>
               </span>
               <kbd class="key-hint">Ctrl+Y</kbd>
@@ -113,14 +136,14 @@
           <div class="button-row">
             <button class="ghost-button labeled-button" id="copyBtn" type="button" title="Copiar la selección">
               <span class="button-line">
-                <span class="button-icon" style="--icon: url('assets/copy.svg')" aria-hidden="true"></span>
+                <span class="button-icon" style="--icon: url('assets/icons/copy.svg')" aria-hidden="true"></span>
                 <span>Copiar</span>
               </span>
               <kbd class="key-hint">Ctrl+C</kbd>
             </button>
             <button class="ghost-button labeled-button" id="cutBtn" type="button" title="Cortar la selección">
               <span class="button-line">
-                <span class="button-icon" style="--icon: url('assets/scissors.svg')" aria-hidden="true"></span>
+                <span class="button-icon" style="--icon: url('assets/icons/scissors.svg')" aria-hidden="true"></span>
                 <span>Cortar</span>
               </span>
               <kbd class="key-hint">Ctrl+X</kbd>
@@ -129,7 +152,7 @@
           <div class="button-row">
             <button class="ghost-button labeled-button" id="pasteBtn" type="button" title="Pegar el portapapeles">
               <span class="button-line">
-                <span class="button-icon" style="--icon: url('assets/paste.svg')" aria-hidden="true"></span>
+                <span class="button-icon" style="--icon: url('assets/icons/paste.svg')" aria-hidden="true"></span>
                 <span>Pegar</span>
               </span>
               <kbd class="key-hint">Ctrl+V</kbd>
@@ -141,7 +164,7 @@
               title="Eliminar el contenido de la selección"
             >
               <span class="button-line">
-                <span class="button-icon" style="--icon: url('assets/trash.svg')" aria-hidden="true"></span>
+                <span class="button-icon" style="--icon: url('assets/icons/trash.svg')" aria-hidden="true"></span>
                 <span>Eliminar</span>
               </span>
               <kbd class="key-hint">Supr</kbd>
@@ -204,7 +227,7 @@
               1:1
             </button>
             <button id="panBtn" type="button" title="Desplazar la vista" aria-label="Desplazar la vista">
-              <span class="button-icon" style="--icon: url('assets/arrows-alt.svg')" aria-hidden="true"></span>
+              <span class="button-icon" style="--icon: url('assets/icons/arrows-alt.svg')" aria-hidden="true"></span>
             </button>
           </div>
         </section>
