@@ -6,6 +6,8 @@ Aplicación web para diseñar patrones de encordado, tejido o cestería sobre un
 
 Está pensada para artesanos: primero dibujas el motivo y luego la app te dice, en cada columna, cuántos puntos van por encima y cuántos por debajo.
 
+Puedes probarla [aquí](https://j04npou.github.io/encordado-sillas/)
+
 ## Para qué sirve
 
 - **Diseñar** un motivo sobre una cuadrícula, celda a celda o importando una imagen.
