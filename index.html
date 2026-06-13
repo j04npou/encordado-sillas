@@ -176,7 +176,10 @@
           <h2>Pixel art</h2>
           <label class="file-button">
             <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" />
-            Importar imagen
+            <span class="button-line">
+              <span class="button-icon" style="--icon: url('assets/icons/alien-8bit.svg')" aria-hidden="true"></span>
+              <span>Importar imagen</span>
+            </span>
           </label>
           <p class="import-error" id="importError" hidden></p>
           <div class="import-controls" id="importControls" hidden>
@@ -197,8 +200,18 @@
 
         <section class="tool-section" data-panel="design">
           <h2>Salida</h2>
-          <button class="primary-button" id="exportBtn" type="button">Exportar diseño PNG</button>
-          <button class="ghost-button" id="shareUrlBtn" type="button">Copiar enlace del diseño</button>
+          <button class="primary-button" id="exportBtn" type="button">
+            <span class="button-line">
+              <span class="button-icon" style="--icon: url('assets/icons/image.svg')" aria-hidden="true"></span>
+              <span>Exportar diseño PNG</span>
+            </span>
+          </button>
+          <button class="ghost-button" id="shareUrlBtn" type="button">
+            <span class="button-line">
+              <span class="button-icon" style="--icon: url('assets/icons/link.svg')" aria-hidden="true"></span>
+              <span>Copiar enlace del diseño</span>
+            </span>
+          </button>
           <input class="share-url" id="shareUrlField" type="text" readonly hidden />
           <p class="share-feedback" id="shareFeedback" hidden></p>
         </section>
@@ -227,7 +240,7 @@
               1:1
             </button>
             <button id="panBtn" type="button" title="Desplazar la vista" aria-label="Desplazar la vista">
-              <span class="button-icon" style="--icon: url('assets/icons/arrows-alt.svg')" aria-hidden="true"></span>
+              <span class="button-icon" style="--icon: url('assets/icons/hand.svg')" aria-hidden="true"></span>
             </button>
           </div>
         </section>

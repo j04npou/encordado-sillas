@@ -37,6 +37,10 @@ const ASSETS = [
   "./assets/icons/scissors.svg",
   "./assets/icons/paste.svg",
   "./assets/icons/trash.svg",
+  "./assets/icons/hand.svg",
+  "./assets/icons/image.svg",
+  "./assets/icons/link.svg",
+  "./assets/icons/alien-8bit.svg",
 ];
 
 self.addEventListener("install", (event) => {
