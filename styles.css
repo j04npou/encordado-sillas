@@ -70,6 +70,25 @@ button:disabled {
   gap: 12px;
 }
 
+.install-button {
+  margin-left: auto;
+  align-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--active);
+  border-radius: 7px;
+  background: var(--active);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.install-button:hover {
+  background: var(--active-strong);
+}
+
 .brand-icon {
   width: 28px;
   height: 44px;

@@ -44,6 +44,7 @@ const elements = {
   shareUrlBtn: document.querySelector("#shareUrlBtn"),
   shareUrlField: document.querySelector("#shareUrlField"),
   shareFeedback: document.querySelector("#shareFeedback"),
+  installBtn: document.querySelector("#installBtn"),
   designModeBtn: document.querySelector("#designModeBtn"),
   weaveModeBtn: document.querySelector("#weaveModeBtn"),
   designView: document.querySelector("#designView"),
@@ -993,3 +994,29 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
   });
 }
+
+// --- Botón de instalación (PWA) ---
+// El navegador solo dispara beforeinstallprompt si la app es instalable y no lo
+// está ya; mostramos nuestro botón en su lugar y lo ocultamos tras instalar.
+let deferredInstallPrompt = null;
+const runningStandalone =
+  window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  if (!runningStandalone) elements.installBtn.hidden = false;
+});
+
+elements.installBtn.addEventListener("click", async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  elements.installBtn.hidden = true;
+});
+
+window.addEventListener("appinstalled", () => {
+  elements.installBtn.hidden = true;
+  deferredInstallPrompt = null;
+});
