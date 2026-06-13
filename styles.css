@@ -265,6 +265,24 @@ button:focus-visible {
   gap: 8px;
 }
 
+.share-url {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fbfcfb;
+  color: var(--ink);
+}
+
+.share-feedback {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .button-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -1,5 +1,6 @@
 import { GridCanvas, MAX_ZOOM, MIN_ZOOM } from "./gridCanvas.js";
 import { exportMatrixAsPng } from "./exporter.js";
+import { decodeDesign, encodeDesign } from "./share.js";
 import { createImportPreview, loadImageFromFile, stampPreview } from "./imageImporter.js";
 import {
   clamp,
@@ -40,6 +41,9 @@ const elements = {
   stampImportBtn: document.querySelector("#stampImportBtn"),
   cancelImportBtn: document.querySelector("#cancelImportBtn"),
   exportBtn: document.querySelector("#exportBtn"),
+  shareUrlBtn: document.querySelector("#shareUrlBtn"),
+  shareUrlField: document.querySelector("#shareUrlField"),
+  shareFeedback: document.querySelector("#shareFeedback"),
   designModeBtn: document.querySelector("#designModeBtn"),
   weaveModeBtn: document.querySelector("#weaveModeBtn"),
   designView: document.querySelector("#designView"),
@@ -739,6 +743,53 @@ function cancelImport() {
   redraw();
 }
 
+// --- Compartir por URL ---
+
+async function shareDesignUrl() {
+  commitFloating();
+  cancelImport();
+  const url = encodeDesign(state);
+  elements.shareUrlField.hidden = false;
+  elements.shareUrlField.value = url;
+  elements.shareUrlField.focus();
+  elements.shareUrlField.select();
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(url);
+    copied = true;
+  } catch {
+    copied = false;
+  }
+  elements.shareFeedback.hidden = false;
+  elements.shareFeedback.textContent = copied
+    ? "Enlace copiado al portapapeles."
+    : "Copia el enlace de arriba (Ctrl+C).";
+}
+
+// Carga un diseño completo desde una URL, sustituyendo el estado actual.
+function applyLoadedDesign(data) {
+  state.matrix = data.matrix;
+  state.rows = data.rows;
+  state.cols = data.cols;
+  state.offsetRow = data.offsetRow;
+  state.offsetCol = data.offsetCol;
+  state.tallCells = data.tallCells;
+  state.widePixels = data.widePixels;
+  state.readDirection = data.readDirection;
+  state.selection = null;
+  state.floating = null;
+  state.importPreview = null;
+  state.activeColumn = 0;
+  // Recorta el overflow vacío sobrante y reconcilia el tamaño de la matriz.
+  normalizeMatrix();
+  elements.rowsInput.value = state.rows;
+  elements.colsInput.value = state.cols;
+  elements.tallCellsInput.checked = state.tallCells;
+  elements.widePixelsInput.checked = state.widePixels;
+  elements.widePixelsRow.hidden = !state.tallCells;
+  elements.directionInput.value = state.readDirection;
+}
+
 function renderInstructions() {
   const instructions = generateInstructions(displayMatrix(), state.readDirection);
   elements.currentColumnLabel.textContent = `Columna ${state.activeColumn + 1} de ${viewCols()}`;
@@ -900,6 +951,7 @@ function bindEvents() {
   elements.stampImportBtn.addEventListener("click", stampImport);
   elements.cancelImportBtn.addEventListener("click", cancelImport);
   elements.exportBtn.addEventListener("click", () => exportMatrixAsPng(activeMatrix()));
+  elements.shareUrlBtn.addEventListener("click", shareDesignUrl);
   elements.designModeBtn.addEventListener("click", () => setMode("design"));
   elements.weaveModeBtn.addEventListener("click", () => setMode("weave"));
   elements.directionInput.addEventListener("change", (event) => {
@@ -924,6 +976,8 @@ function init() {
   bindEvents();
   refreshZoomButtons();
   const params = new URLSearchParams(window.location.search);
+  const shared = decodeDesign(window.location.search);
+  if (shared) applyLoadedDesign(shared);
   if (window.location.hash === "#weave" || params.get("mode") === "weave") {
     setMode("weave");
     return;
